@@ -1,0 +1,16 @@
+{
+    "_version": "18.2.0",
+    "compilerOptions": {
+      "lib": ["es2023"],
+      "outDir": "dist",
+      "module": "node16",
+      "target": "es2022",
+
+      "strict": true,
+      "noUncheckedIndexedAccess": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "moduleResolution": "node16"
+    },
+    "include": ["src"]
+  }

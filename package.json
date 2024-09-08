@@ -1,0 +1,33 @@
+{
+  "name": "shango-deploy",
+  "version": "0.0.1",
+  "description": "Deploy your web app anywhere",
+  "main": "index.js",
+  "bin": {
+    "shango": "./dist/index.js"
+  },
+  "scripts": {
+    "link-cli": "npm unlink shango && npm link",
+    "dev": "tsc -w",
+    "test": "test",
+    "build": "tsc"
+  },
+  "keywords": [
+    "deploy"
+  ],
+  "author": "devalade",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/ssh2": "^1.15.1",
+    "jest": "^29.7.0",
+    "rollup": "^4.21.2",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "ssh2": "^1.15.0"
+  }
+}
