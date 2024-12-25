@@ -12,7 +12,7 @@
   "scripts": {
     "link-cli": "npm link || true && npm link",
     "dev": "tsc -w",
-    "test": "test",
+    "test": "vitest",
     "build": "tsc && chmod +x dist/index.js",
     "install:local": "npm run build && npm run link-cli"
   },
@@ -23,7 +23,8 @@
     "@types/inquirer": "^9.0.7",
     "@types/ssh2": "^1.15.1",
     "@types/yaml": "^1.9.7",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.8"
   },
   "dependencies": {
     "commander": "^12.1.0",

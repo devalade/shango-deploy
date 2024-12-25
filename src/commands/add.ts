@@ -1,12 +1,13 @@
-import inquirer from 'inquirer';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { stringify } from 'yaml';
-import { Framework, Database, CacheDatabase } from '../types/index.js';
+import { Framework, Database, CacheDatabase, ShangoConfig, } from '../types/index.js';
+import { parseShangoConfig } from '../utils/generate-config.js';
+import inquirer, { QuestionCollection } from 'inquirer';
 
 export async function add(): Promise<void> {
   try {
-    const answers = await inquirer.prompt([
+    const answers: Omit<ShangoConfig['app'], 'servers'> & { serverCount: number } = await inquirer.prompt([
       {
         type: 'list',
         name: 'framework',
@@ -39,20 +40,60 @@ export async function add(): Promise<void> {
           { name: 'Memcached', value: CacheDatabase.MEMCACHED },
           { name: 'No Cache Database', value: CacheDatabase.NONE }
         ]
-      }
+      },
+      {
+        type: 'input',
+        name: 'domain',
+        message: 'Enter your domain:',
+      },
+      {
+        type: 'number',
+        name: 'serverCount',
+        message: 'How many servers do you have?',
+        validate: (input) => input !== undefined && input > 0 || 'You must have at least one server.',
+      },
     ]);
 
-    const config = {
-      framework: answers.framework,
-      database: answers.database,
-      cacheDatabase: answers.cacheDatabase,
-      created_at: new Date().toISOString()
+    const serverPrompts: QuestionCollection = [];
+    for (let i = 0; i < answers.serverCount; i++) {
+      serverPrompts.push(
+        {
+          type: 'input',
+          name: `servers[${i}].environment`,
+          message: `Enter the environment for server ${i + 1}:`,
+        },
+        {
+          type: 'input',
+          name: `servers[${i}].ipAddresses`,
+          message: `Enter the IP addresses for server ${i + 1} (comma-separated):`,
+          filter: (input) => input.split(',').map((ip) => ip.trim()),
+        }
+      );
+    }
+
+    const serverAnswers = await inquirer.prompt(serverPrompts);
+
+    const servers = Object.keys(serverAnswers).map((key) => serverAnswers[key]);
+
+    const config: ShangoConfig = {
+      app: {
+        framework: answers.framework,
+        domain: answers.domain,
+        packageManager: answers.packageManager,
+        database: answers.database,
+        cacheDatabase: answers.cacheDatabase,
+        servers,
+      },
     };
 
     writeFileSync(
       join(process.cwd(), 'shango.yml'),
       stringify(config)
     );
+
+    parseShangoConfig('shango.yml');
+
+
 
     console.log('✨ Configuration created successfully!');
     console.log('📁 Configuration file: shango.yml');

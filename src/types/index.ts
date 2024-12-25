@@ -19,9 +19,29 @@ export enum CacheDatabase {
   NONE = 'none'
 }
 
-export interface ShangoConfig {
-  framework: Framework;
-  database: Database;
-  cacheDatabase: CacheDatabase;
-  created_at: string;
+export enum PackageManager {
+  REDIS = 'redis',
+  MEMCACHED = 'memcached',
+  NONE = 'none'
 }
+
+
+interface AppConfig {
+  framework: Framework;
+  domain: string;
+  packageManager: PackageManager;
+  database: string;
+  cacheDatabase: string;
+  servers: ServerConfig[];
+}
+
+interface ServerConfig {
+  environment: string;
+  ipAddresses: string | string[];
+}
+
+
+export interface ShangoConfig {
+  app: AppConfig;
+}
+
