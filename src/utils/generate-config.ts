@@ -24,7 +24,7 @@ export function parseShangoConfig(configFile: string): ShangoConfig {
     const fileContents = fs.readFileSync(configFilePath, 'utf8');
     const config = yaml.parse(fileContents) as ShangoConfig;
     return config;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error reading or parsing ${configFile}: ${error.message}`);
     process.exit(1);
   }
