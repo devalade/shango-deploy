@@ -32,12 +32,7 @@ interface AppConfig {
   packageManager: PackageManager;
   database: string;
   cacheDatabase: string;
-  servers: ServerConfig[];
-}
-
-interface ServerConfig {
-  environment: string;
-  ipAddresses: string | string[];
+  servers: string[];
 }
 
 
@@ -45,3 +40,13 @@ export interface ShangoConfig {
   app: AppConfig;
 }
 
+export interface FrameworkConfig {
+  getEnvironmentVariables(): Record<string, string>;
+  getAccessories(): Record<string, any>;
+  getAppPort(): number;
+}
+
+export interface DatabaseConfig {
+  getEnvironmentVariables(): Record<string, string>;
+  getAccessoryConfig(): Record<string, any>;
+}
