@@ -3,11 +3,14 @@ import { join } from 'path';
 import { stringify } from 'yaml';
 import { Framework, Database, CacheDatabase, ShangoConfig, } from '../types/index.js';
 import { parseShangoConfig } from '../utils/generate-config.js';
-import inquirer, { QuestionCollection } from 'inquirer';
+import inquirer from 'inquirer';
+import { executeKamal } from '../utils/run-kamal.js';
+import { KamalYAMLConfigurationGenerator } from '../utils/kamal-generator/index.js';
+import { HighLevelConfigParser } from '../utils/high-level-config-parser/index.js';
 
 export async function add(): Promise<void> {
   try {
-    const answers: Omit<ShangoConfig['app'], 'servers'> & { serverCount: number } = await inquirer.prompt([
+    const answers = await inquirer.prompt<Omit<ShangoConfig['app'], 'servers'> & { appName: string; server: string }>([
       {
         type: 'list',
         name: 'framework',
@@ -43,37 +46,25 @@ export async function add(): Promise<void> {
       },
       {
         type: 'input',
+        name: 'appName',
+        message: 'Enter your app name:',
+      },
+      {
+        type: 'input',
         name: 'domain',
         message: 'Enter your domain:',
       },
       {
-        type: 'number',
-        name: 'serverCount',
-        message: 'How many servers do you have?',
-        validate: (input) => input !== undefined && input > 0 || 'You must have at least one server.',
+        type: 'input',
+        name: 'server',
+        message: 'Enter your ipaddress|domain|subdomain:',
+        validate: (input) => {
+          const regex = /^(?!:\/\/)([a-zA-Z0-9-_]+\.)*[a-zA-Z0-9][a-zA-Z0-9-_]+\.[a-zA-Z]{2,11}$|^(?!:\/\/)(\d{1,3}\.){3}\d{1,3}$/;
+          return regex.test(input) || 'Please enter a valid IP address or subdomain';
+        }
       },
     ]);
 
-    const serverPrompts: QuestionCollection = [];
-    for (let i = 0; i < answers.serverCount; i++) {
-      serverPrompts.push(
-        {
-          type: 'input',
-          name: `servers[${i}].environment`,
-          message: `Enter the environment for server ${i + 1}:`,
-        },
-        {
-          type: 'input',
-          name: `servers[${i}].ipAddresses`,
-          message: `Enter the IP addresses for server ${i + 1} (comma-separated):`,
-          filter: (input) => input.split(',').map((ip) => ip.trim()),
-        }
-      );
-    }
-
-    const serverAnswers = await inquirer.prompt(serverPrompts);
-
-    const servers = Object.keys(serverAnswers).map((key) => serverAnswers[key]);
 
     const config: ShangoConfig = {
       app: {
@@ -82,7 +73,7 @@ export async function add(): Promise<void> {
         packageManager: answers.packageManager,
         database: answers.database,
         cacheDatabase: answers.cacheDatabase,
-        servers,
+        servers: [answers.server],
       },
     };
 
@@ -93,7 +84,11 @@ export async function add(): Promise<void> {
 
     parseShangoConfig('shango.yml');
 
+    executeKamal('init');
 
+
+    const parser = new HighLevelConfigParser(config);
+    const kamalConfig = parser.generate();
 
     console.log('✨ Configuration created successfully!');
     console.log('📁 Configuration file: shango.yml');
