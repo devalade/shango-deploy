@@ -2,11 +2,10 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { stringify } from 'yaml';
 import { Framework, Database, CacheDatabase, ShangoConfig, } from '../types/index.js';
-import { parseShangoConfig } from '../utils/generate-config.js';
+import { parseShangoConfig } from '../util/generate-config.js';
 import inquirer from 'inquirer';
-import { executeKamal } from '../utils/run-kamal.js';
-import { KamalYAMLConfigurationGenerator } from '../utils/kamal-generator/index.js';
-import { HighLevelConfigParser } from '../utils/high-level-config-parser/index.js';
+import { executeKamal } from '../util/execute-kamal.js';
+import { HighLevelConfigParser } from '../util/high-level-config-parser/index.js';
 
 export async function add(): Promise<void> {
   try {
@@ -18,6 +17,7 @@ export async function add(): Promise<void> {
         choices: [
           { name: 'Next.js', value: Framework.NEXTJS },
           { name: 'Remix', value: Framework.REMIX },
+          { name: 'NuxtJS', value: Framework.NUXTJS },
           { name: 'Svelte', value: Framework.SVELTE },
           { name: 'AdonisJS', value: Framework.ADONISJS },
           { name: 'NestJS', value: Framework.NESTJS }
@@ -88,7 +88,7 @@ export async function add(): Promise<void> {
 
 
     const parser = new HighLevelConfigParser(config);
-    const kamalConfig = parser.generate();
+    parser.generate();
 
     console.log('✨ Configuration created successfully!');
     console.log('📁 Configuration file: shango.yml');

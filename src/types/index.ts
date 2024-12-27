@@ -1,6 +1,7 @@
 export enum Framework {
   NEXTJS = 'nextjs',
   REMIX = 'remix',
+  NUXTJS = 'nuxjs',
   SVELTE = 'svelte',
   ADONISJS = 'adonisjs',
   NESTJS = 'nestjs'
@@ -27,6 +28,7 @@ export enum PackageManager {
 
 
 interface AppConfig {
+  appName: string;
   framework: Framework;
   domain: string;
   packageManager: PackageManager;
