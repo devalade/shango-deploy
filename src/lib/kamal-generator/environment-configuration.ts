@@ -1,7 +1,6 @@
 import { EnvironmentConfigOptions } from "../../types/kamal-generator.js";
 import { ConfigurationSection } from "./configuration-section.js";
 
-// Environment Configuration
 export class EnvironmentConfiguration extends ConfigurationSection<EnvironmentConfigOptions> {
   generate(): Record<string, any> {
     const { clear = {}, secret = [] } = this.options;

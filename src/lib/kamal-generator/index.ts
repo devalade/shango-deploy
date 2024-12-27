@@ -5,7 +5,6 @@ import { ConfigurationOptions, ConfigurationType } from "../../types/kamal-gener
 import { ConfigurationFactory } from "./configuration-factory.js";
 import { ConfigurationSection } from "./configuration-section.js";
 
-
 export class KamalYAMLConfigurationGenerator {
   private sections: Map<string, ConfigurationSection<any>>;
 
@@ -30,29 +29,10 @@ export class KamalYAMLConfigurationGenerator {
     }
 
     writeFileSync(
-      join(process.cwd(), 'shango.yml'),
+      join(process.cwd(), 'config/deploy.yml'),
       stringify(config)
     );
     return config;
   }
 }
 
-// Example usage:
-/*
-const generator = new YAMLConfigurationGenerator();
-
-generator
-  .addSection('basic', {
-    serviceName: 'my-app',
-    imageName: 'my-user/my-app'
-  })
-  .addSection('servers', {
-    web: ['192.168.0.1']
-  })
-  .addSection('proxy', {
-    ssl: true,
-    host: 'app.example.com'
-  });
-
-const config = generator.generate();
-*/

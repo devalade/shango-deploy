@@ -50,8 +50,8 @@ export class HighLevelConfigParser {
     const cache = this.getCacheConfig();
 
     this.generator.addSection('basic', {
-      serviceName: this.config.app.domain.split('.')[0],
-      imageName: `${this.config.app.domain}/app`
+      serviceName: this.config.app.appName,
+      imageName: `${this.config.app.}/${this.config.app.appName}`
     });
 
     if (Array.isArray(this.config.app.servers)) {

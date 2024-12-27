@@ -1,7 +1,6 @@
 import { AccessoriesConfigOptions, AccessoryConfig } from "../../types/kamal-generator.js";
 import { ConfigurationSection } from "./configuration-section.js";
 
-// Accessories Configuration
 export class AccessoriesConfiguration extends ConfigurationSection<AccessoriesConfigOptions> {
   generate(): Record<string, any> {
     if (Object.keys(this.options).length === 0) return {};

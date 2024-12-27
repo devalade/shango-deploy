@@ -1,11 +1,14 @@
 import { execSync } from 'node:child_process';
 
 export function executeKamal(command: string) {
-  const baseCommand = 'docker run --rm ' +
-    '-v "${PWD}:/workdir" ' +
-    '-v "${SSH_AUTH_SOCK}:/ssh-agent" ' +
-    '-v /var/run/docker.sock:/var/run/docker.sock ' +
-    'ghcr.io/basecamp/kamal:latest';
+  const baseCommand = [
+    'docker run --rm',
+    `-u "$(id -u):$(id -g)"`,
+    '-v "$PWD:/workdir"',
+    '-v "$SSH_AUTH_SOCK:/ssh-agent"',
+    '-v /var/run/docker.sock:/var/run/docker.sock',
+    'ghcr.io/basecamp/kamal:latest'
+  ].join(' ');
 
   try {
     const output = execSync(`${baseCommand} ${command}`, {

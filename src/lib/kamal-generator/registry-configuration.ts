@@ -1,7 +1,6 @@
 import { RegistryConfigOptions } from "../../types/kamal-generator.js";
 import { ConfigurationSection } from "./configuration-section.js";
 
-// Registry Configuration
 export class RegistryConfiguration extends ConfigurationSection<RegistryConfigOptions> {
   generate(): Record<string, any> {
     const {
