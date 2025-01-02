@@ -6,23 +6,28 @@
   "author": "devalade",
   "license": "ISC",
   "type": "module",
+  "keywords": [
+    "deploy"
+  ],
   "bin": {
     "shango": "./dist/index.js"
+  },
+  "imports": {
+    "~": "./src/*.js"
   },
   "scripts": {
     "link-cli": "npm link || true && npm link",
     "dev": "tsc -w",
     "test": "vitest",
-    "build": "tsc && chmod +x dist/index.js",
+    "copy-templates": "copyfiles -u 1 src/templates/**/* dist",
+    "build": "tsc && chmod +x dist/index.js && npm run copy-templates",
     "install:local": "npm run build && npm run link-cli"
   },
-  "keywords": [
-    "deploy"
-  ],
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
     "@types/ssh2": "^1.15.1",
     "@types/yaml": "^1.9.7",
+    "copyfiles": "^2.4.1",
     "typescript": "^5.5.4",
     "vitest": "^2.1.8"
   },
