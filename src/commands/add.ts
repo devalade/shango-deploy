@@ -5,11 +5,11 @@ import { Framework, Database, CacheDatabase, ShangoConfig, } from '../types/inde
 import { parseShangoConfig } from '../util/generate-config.js';
 import inquirer from 'inquirer';
 import { executeKamal } from '../util/execute-kamal.js';
-import { HighLevelConfigParser } from '../util/high-level-config-parser/index.js';
+import { HighLevelConfigParser } from '../lib/high-level-config-parser/index.js';
 
 export async function add(): Promise<void> {
   try {
-    const answers = await inquirer.prompt<Omit<ShangoConfig['app'], 'servers'> & { appName: string; server: string }>([
+    const answers = await inquirer.prompt<Omit<ShangoConfig['app'], 'servers'> & { githubUsername: string; appName: string; server: string }>([
       {
         type: 'list',
         name: 'framework',
@@ -46,6 +46,11 @@ export async function add(): Promise<void> {
       },
       {
         type: 'input',
+        name: 'githubUsername',
+        message: 'Enter your github username:',
+      },
+      {
+        type: 'input',
         name: 'appName',
         message: 'Enter your app name:',
       },
@@ -68,6 +73,8 @@ export async function add(): Promise<void> {
 
     const config: ShangoConfig = {
       app: {
+        appName: answers.appName,
+        githubUsername: answers.githubUsername,
         framework: answers.framework,
         domain: answers.domain,
         packageManager: answers.packageManager,
