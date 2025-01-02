@@ -29,12 +29,14 @@ export enum PackageManager {
 
 interface AppConfig {
   appName: string;
+  githubUsername: string;
   framework: Framework;
   domain: string;
   packageManager: PackageManager;
   database: string;
   cacheDatabase: string;
   servers: string[];
+  assetPath?: string;
 }
 
 
@@ -43,6 +45,7 @@ export interface ShangoConfig {
 }
 
 export interface FrameworkConfig {
+  getAssetPath(): string;
   getEnvironmentVariables(): Record<string, string>;
   getAccessories(): Record<string, any>;
   getAppPort(): number;

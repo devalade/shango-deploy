@@ -1,9 +1,13 @@
 import { Framework, FrameworkConfig } from "../../../types/index.js";
-import { template } from "../../template.js";
+import { template } from "../../../util/template.js";
 
 export class NextJSFramework implements FrameworkConfig {
   constructor() {
     template(Framework.NEXTJS, { dockerfile: true });
+  }
+
+  getAssetPath(): string {
+    return '/app/.next'
   }
 
   getEnvironmentVariables(): Record<string, string> {
@@ -20,5 +24,6 @@ export class NextJSFramework implements FrameworkConfig {
   getAppPort(): number {
     return 3000;
   }
+
 }
 

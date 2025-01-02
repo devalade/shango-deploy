@@ -1,7 +1,7 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { stringify } from "yaml";
-import { ConfigurationOptions, ConfigurationType } from "../../types/kamal-generator.js";
+import { ConfigurationOptionsByType, ConfigurationType } from "../../types/kamal-generator.js";
 import { ConfigurationFactory } from "./configuration-factory.js";
 import { ConfigurationSection } from "./configuration-section.js";
 
@@ -12,7 +12,7 @@ export class KamalYAMLConfigurationGenerator {
     this.sections = new Map();
   }
 
-  addSection(type: ConfigurationType, options: ConfigurationOptions): this {
+  addSection<T extends ConfigurationType>(type: T, options: ConfigurationOptionsByType<T>): this {
     const section = ConfigurationFactory.createSection(type, options);
     this.sections.set(type, section);
     return this;

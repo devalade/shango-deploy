@@ -1,5 +1,6 @@
-import { ConfigurationType, ConfigurationOptions, BasicConfigOptions, ServerConfig, ProxyConfigOptions, RegistryConfigOptions, BuilderConfigOptions, EnvironmentConfigOptions, AccessoriesConfigOptions } from "../../types/kamal-generator.js";
+import { ConfigurationType, BasicConfigOptions, ServerConfig, ProxyConfigOptions, RegistryConfigOptions, BuilderConfigOptions, EnvironmentConfigOptions, AccessoriesConfigOptions, ConfigurationOptionsByType } from "../../types/kamal-generator.js";
 import { AccessoriesConfiguration } from "./accessories-configuration.js";
+import { AssetPathConfiguration } from "./asset-path-configuration.js";
 import { BasicConfiguration } from "./basic-configuration.js";
 import { BuilderConfiguration } from "./builder-configuration.js";
 import { ConfigurationSection } from "./configuration-section.js";
@@ -10,7 +11,7 @@ import { ServersConfiguration } from "./servers-configuration.js";
 import { VolumesConfiguration } from "./volumes-configuration.js";
 
 export class ConfigurationFactory {
-  static createSection(type: ConfigurationType, options: ConfigurationOptions): ConfigurationSection<any> {
+  static createSection<T extends ConfigurationType>(type: T, options: ConfigurationOptionsByType<T>): ConfigurationSection<any> {
     switch (type) {
       case 'basic':
         return new BasicConfiguration(options as BasicConfigOptions);
@@ -28,6 +29,8 @@ export class ConfigurationFactory {
         return new AccessoriesConfiguration(options as AccessoriesConfigOptions);
       case 'volumes':
         return new VolumesConfiguration(options as string[]);
+      case 'assets':
+        return new AssetPathConfiguration(options as string);
       default:
         throw new Error(`Unknown configuration type: ${type}`);
     }

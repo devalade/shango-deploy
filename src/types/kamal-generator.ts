@@ -1,6 +1,7 @@
 export interface BasicConfigOptions {
   serviceName?: string;
   imageName?: string;
+  assetPath?: string;
 }
 
 export interface ServerConfig {
@@ -45,24 +46,19 @@ export interface AccessoriesConfigOptions {
   [key: string]: AccessoryConfig;
 }
 
-export type ConfigurationOptions =
-  | BasicConfigOptions
-  | ServerConfig
-  | ProxyConfigOptions
-  | RegistryConfigOptions
-  | BuilderConfigOptions
-  | EnvironmentConfigOptions
-  | AccessoriesConfigOptions
-  | string[];
+export type ConfigurationOptions = ConfigurationTypeMap[keyof ConfigurationTypeMap];
 
-export type ConfigurationType =
-  | 'basic'
-  | 'servers'
-  | 'proxy'
-  | 'registry'
-  | 'builder'
-  | 'env'
-  | 'accessories'
-  | 'volumes';
+export type ConfigurationType = keyof ConfigurationTypeMap;
+export type ConfigurationTypeMap = {
+  basic: BasicConfigOptions;
+  servers: ServerConfig;
+  proxy: ProxyConfigOptions;
+  registry: RegistryConfigOptions;
+  builder: BuilderConfigOptions;
+  env: EnvironmentConfigOptions;
+  accessories: AccessoriesConfigOptions;
+  assets: string;
+  volumes: string[];
+};
 
-
+export type ConfigurationOptionsByType<T extends ConfigurationType> = ConfigurationTypeMap[T];
