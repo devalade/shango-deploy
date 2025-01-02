@@ -1,7 +1,7 @@
 import { Git } from "./git.js";
 import { Github } from "./github.js";
 
-export class RepositoryService {
+export class Repository {
   private git: Git;
   private github: Github;
 

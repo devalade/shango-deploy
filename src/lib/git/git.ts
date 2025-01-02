@@ -9,6 +9,16 @@ export class Git {
     this.projectPath = projectPath;
   }
 
+  static getGlobalUsername(): string {
+    try {
+      return execSync('git config --global user.name')
+        .toString()
+        .trim();
+    } catch {
+      throw new Error('Global git username not configured');
+    }
+  }
+
   isGitInitialized(): boolean {
     return fs.existsSync(path.join(this.projectPath, '.git'));
   }
