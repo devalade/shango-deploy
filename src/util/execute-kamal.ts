@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 
-export function executeKamal(command: string) {
+export function executeKamal(command: string | string[]) {
   const baseCommand = [
     'docker run --rm',
     `-u "$(id -u):$(id -g)"`,
@@ -9,6 +9,10 @@ export function executeKamal(command: string) {
     '-v /var/run/docker.sock:/var/run/docker.sock',
     'ghcr.io/basecamp/kamal:latest'
   ].join(' ');
+
+  if (Array.isArray(command)) {
+    command = command.join(' ');
+  }
 
   try {
     const output = execSync(`${baseCommand} ${command}`, {
