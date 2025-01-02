@@ -2,7 +2,7 @@
 
 import { Command } from 'commander';
 import { add } from './commands/add.js';
-import { kamal } from './commands/kamal.js';
+import { kamal } from './commands/kl.js';
 
 const program = new Command();
 
