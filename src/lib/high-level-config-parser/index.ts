@@ -51,7 +51,11 @@ export class HighLevelConfigParser {
 
     this.generator.addSection('basic', {
       serviceName: this.config.app.appName,
-      imageName: `${this.config.app.}/${this.config.app.appName}`
+      imageName: `${this.config.app.githubUsername}/${this.config.app.appName}`,
+    });
+
+    this.generator.addSection('builder', {
+      arch: 'amd64'
     });
 
     if (Array.isArray(this.config.app.servers)) {
@@ -68,7 +72,7 @@ export class HighLevelConfigParser {
 
     this.generator.addSection('registry', {
       server: 'ghcr.io',
-      username: this.config.app.domain.split('.')[1],
+      username: this.config.app.githubUsername,
       passwordSecrets: ['GITHUB_TOKEN']
     });
 
@@ -92,23 +96,10 @@ export class HighLevelConfigParser {
       this.generator.addSection('accessories', accessories);
     }
 
+    if (this.getFrameworkConfig().getAssetPath()) {
+      this.generator.addSection('assets', this.getFrameworkConfig().getAssetPath());
+    }
+
     return this.generator.generate();
   }
 }
-
-// Example usage
-/*
-const config: HighLevelConfig = {
-  app: {
-    framework: 'nextjs',
-    domain: 'dwt.zecreator.com',
-    database: 'postgresql',
-    cacheDatabase: 'redis',
-    servers: ['server-dwt.zecreator.com']
-  }
-};
-
-const parser = new HighLevelConfigParser(config);
-const kamalConfig = parser.generate();
-console.log(kamalConfig);
-*/
