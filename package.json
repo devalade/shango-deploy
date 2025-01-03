@@ -10,17 +10,13 @@
     "deploy"
   ],
   "bin": {
-    "shango": "./dist/index.js"
-  },
-  "imports": {
-    "~": "./src/*.js"
+    "shango": "./dist/src/index.js"
   },
   "scripts": {
     "link-cli": "npm link || true && npm link",
     "dev": "tsc -w",
     "test": "vitest",
-    "copy-templates": "copyfiles -u 1 src/templates/**/* dist",
-    "build": "tsc && chmod +x dist/index.js && npm run copy-templates",
+    "build": "tsc && chmod +x dist/src/index.js",
     "install:local": "npm run build && npm run link-cli"
   },
   "devDependencies": {
