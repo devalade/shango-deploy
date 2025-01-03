@@ -43,4 +43,14 @@ export class Git {
   push(remote: string = 'origin', branch: string = 'main'): void {
     execSync(`git push -u ${remote} ${branch}`, { cwd: this.projectPath });
   }
+
+  static clone(repo: string, targetDir: string, options?: { '--depth': number }): void {
+    if (fs.existsSync(targetDir)) {
+      throw new Error('Target directory already exists');
+    }
+
+    const depthOption = options && options['--depth'] ? `--depth ${options['--depth']}` : '';
+    const url = `https://github.com/${repo}.git`;
+    execSync(`git clone ${depthOption} ${url} ${targetDir}`);
+  }
 }

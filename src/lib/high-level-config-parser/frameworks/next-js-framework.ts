@@ -1,13 +1,14 @@
+import { Template } from "../../template.js";
 import { Framework, FrameworkConfig } from "../../../types/index.js";
-import { template } from "../../../util/template.js";
 
 export class NextJSFramework implements FrameworkConfig {
   constructor() {
-    template(Framework.NEXTJS, { dockerfile: true });
+    const template = new Template({ framework: Framework.NEXTJS, dockerfile: true, githubAction: true });
+    template.generate();
   }
 
   getAssetPath(): string {
-    return '/app/.next'
+    return '/app/.next';
   }
 
   getEnvironmentVariables(): Record<string, string> {
