@@ -1,0 +1,68 @@
+app:
+  name: nextjs-app
+  github_username: devalade
+  framework: nextjs
+  domain: nextjs.devalade.me
+  package_manager: npm
+
+databases:
+  primary:
+    type: postgres
+    version: "15"
+  cache:
+    type: redis
+    version: "7"
+
+servers:
+  - environment: staging
+    hosts:
+      - 33.34.20.3
+      - 33.34.20.4
+  - environment: production
+    hosts:
+      - 44.34.21.23
+
+# New sections below
+users:
+  - username: deploy
+    groups: [docker, sudo]
+    create_home: true
+    force_password_change: true
+    ssh_keys:
+      - "ssh-rsa AAAAB3NzaC1yc2E... user@example.com"
+
+hooks:
+  pre_deploy:
+    - command: "npm run build"
+      local: true
+    - command: "npm run test"
+      local: true
+
+  post_deploy:
+    - command: "npm run db:migrate"
+      remote: true
+    - command: "npm run cache:clear"
+      remote: true
+
+  pre_provision:
+    - command: "apt-get update"
+      remote: true
+    - command: "apt-get upgrade -y"
+      remote: true
+
+  post_provision:
+    - command: "ufw allow OpenSSH"
+      remote: true
+    - command: "ufw enable"
+      remote: true
+
+deployment:
+  strategy: rolling
+  max_parallel: 2
+  delay: 5
+  healthcheck:
+    path: /health
+    port: 3000
+    interval: 10
+    timeout: 2
+    retries: 3
