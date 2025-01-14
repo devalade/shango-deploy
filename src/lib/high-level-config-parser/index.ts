@@ -44,6 +44,23 @@ export class HighLevelConfigParser {
     }
   }
 
+  private addDeploymentConfig(): void {
+    const { deployment } = this.config;
+
+    this.generator.addSection('boot', {
+      limit: deployment.max_parallel,
+      wait: deployment.delay
+    });
+
+    this.generator.addSection('healthcheck', {
+      path: deployment.healthcheck.path,
+      port: deployment.healthcheck.port,
+      interval: deployment.healthcheck.interval,
+      timeout: deployment.healthcheck.timeout,
+      retries: deployment.healthcheck.retries
+    });
+  }
+
   generate(): Record<string, any> {
     const framework = this.getFrameworkConfig();
     const database = this.getDatabaseConfig();

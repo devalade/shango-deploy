@@ -3,10 +3,14 @@ import { ConfigurationSection } from "./configuration-section.js";
 
 export class ProxyConfiguration extends ConfigurationSection<ProxyConfigOptions> {
   generate(): Record<string, any> {
-    const { ssl = true, host = 'app.example.com', appPort } = this.options;
+    const { ssl = true, host = 'app.example.com', appPort, healthcheck = { path: '/', interval: 5 } } = this.options;
     const proxy: Record<string, any> = {
       ssl,
-      host
+      host,
+      healthcheck: {
+        path: healthcheck.path,
+        interval: 5
+      }
     };
 
     if (appPort) {
