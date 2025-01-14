@@ -122,7 +122,7 @@ MIT License - see the [LICENSE](LICENSE) file for details
 
 ## Support 💬
 
-- Documentation: [docs.shango-deploy.dev](https://docs.shango-deploy.dev)
+- Documentation: [shango.devalade.me/docs](https://shango.devalade.me/docs)
 - Issues: [GitHub Issues](https://github.com/your-username/shango-deploy/issues)
 - Discord: [Join our community](https://discord.gg/shango-deploy)
 
@@ -134,7 +134,6 @@ Shango Deploy is inspired by various deployment tools and best practices from th
 - [Spin](https://github.com/serversideup/spin)
 - [Deployer](https://github.com/deployerphp/deployer)
 - [Docker](https://www.docker.com/)
-- [Let's Encrypt](https://letsencrypt.org/)
 
 ## Roadmap 🗺
 
