@@ -3,6 +3,8 @@ import { Repository } from '../lib/git/repository.js';
 import { executeKamal } from '../util/execute-kamal.js';
 
 export async function kamal(cmd: string[]): Promise<void> {
+  console.log('Kamal command is running');
+  console.log('Command:', cmd);
   executeKamal(cmd);
   if (cmd.includes('setup')) {
     const projectPath = process.cwd();
