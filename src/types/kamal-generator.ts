@@ -8,10 +8,16 @@ export interface ServerConfig {
   [key: string]: string[];
 }
 
+interface HealthcheckConfig {
+  path: string;
+  interval: number;
+}
+
 export interface ProxyConfigOptions {
   ssl?: boolean;
   host?: string;
   appPort?: number;
+  healthcheck?: HealthcheckConfig;
 }
 
 export interface RegistryConfigOptions {
