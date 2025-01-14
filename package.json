@@ -7,7 +7,7 @@
   "license": "ISC",
   "type": "module",
   "keywords": [
-    "deploy"
+    "deploy", "deployment", "continous-deployment","automation"
   ],
   "bin": {
     "shango": "./dist/src/index.js"

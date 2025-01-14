@@ -23,9 +23,9 @@ export class HighLevelConfigParser {
   }
 
   private getDatabaseConfig(): DatabaseConfig | null {
-    if (!this.config.app.database) return null;
+    if (!this.config.databases.primary) return null;
 
-    switch (this.config.app.database.toLowerCase()) {
+    switch (this.config.databases.primary.type.toLowerCase()) {
       case 'postgresql':
         return new PostgreSQLDatabase(this.config.app.domain);
       default:
@@ -34,9 +34,9 @@ export class HighLevelConfigParser {
   }
 
   private getCacheConfig(): DatabaseConfig | null {
-    if (!this.config.app.cacheDatabase) return null;
+    if (!this.config.databases.cache) return null;
 
-    switch (this.config.app.cacheDatabase.toLowerCase()) {
+    switch (this.config.databases.cache.type.toLowerCase()) {
       case 'redis':
         return new RedisCache(this.config.app.domain);
       default:
@@ -67,15 +67,16 @@ export class HighLevelConfigParser {
     const cache = this.getCacheConfig();
 
     this.generator.addSection('basic', {
-      serviceName: this.config.app.appName,
-      imageName: `${this.config.app.githubUsername}/${this.config.app.appName}`,
+      serviceName: this.config.app.name,
+      imageName: `${this.config.app.github_username}/${this.config.app.name}`,
     });
 
     this.generator.addSection('builder', {
       arch: 'amd64'
     });
 
-    if (Array.isArray(this.config.app.servers)) {
+    // FIXME: update the logic of the parser to handle the new format of the servers config
+    if (Array.isArray(this.config.servers)) {
       this.generator.addSection('servers', {
         web: this.config.app.servers
       });
@@ -89,7 +90,7 @@ export class HighLevelConfigParser {
 
     this.generator.addSection('registry', {
       server: 'ghcr.io',
-      username: this.config.app.githubUsername,
+      username: this.config.app.github_username,
       passwordSecrets: ['GITHUB_TOKEN']
     });
 

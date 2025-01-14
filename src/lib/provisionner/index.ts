@@ -1,7 +1,5 @@
 import { ShangoConfig } from '../../types/index.js';
 import { executeSsh2Command as executeCommand } from '../../util/execute-ssh2-command.js';
-import { readFileSync } from 'fs';
-import { parse as parseYAML } from 'yaml';
 
 export class ServerProvisioner {
   private config: ShangoConfig;
@@ -180,8 +178,11 @@ export class ServerProvisioner {
         ...(user.force_password_change ? [`chage -d 0 ${user.username}`] : [])
       ];
 
-      for (const command of commands) {
-        await executeCommand(this.servers, command);
+
+      for (let index = 0; index < this.servers.length; index++) {
+        for (const command of commands) {
+          await executeCommand(this.servers[index], command);
+        }
       }
     }
   }
