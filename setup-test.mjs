@@ -93,7 +93,7 @@ function setupTestEnvironment() {
       ]
     };
     fs.writeFileSync(
-      path.join(process.cwd(), 'shango.test.yml'),
+      path.join(process.cwd(), 'shango.json'),
       JSON.stringify(mockShangoConfig, null, 2)
     );
 
