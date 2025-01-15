@@ -12,11 +12,10 @@ program
   .description('Deploy your web app anywhere')
   .version('0.0.1');
 
-
-
 program
   .command('provision')
   .description('Provision servers with required configurations')
+  .argument('[environment]', 'Target environment (staging/production)')
   .action(provision);
 
 program
@@ -29,5 +28,14 @@ program
   .argument('[cmd...]')
   .description('This is an alias to the kamal deploy')
   .action(kamal);
+
+
+program
+  .command('sync-secrets')
+  .description('Synchronize secrets to GitHub')
+  .requiredOption('--owner <owner>', 'GitHub repository owner')
+  .requiredOption('--repo <repo>', 'GitHub repository name')
+  .requiredOption('--token <token>', 'GitHub personal access token')
+  .action(syncSecrets);
 
 program.parse();

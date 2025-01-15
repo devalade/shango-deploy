@@ -1,63 +1,69 @@
+
 export enum Framework {
   NEXTJS = 'nextjs',
   REMIX = 'remix',
-  NUXTJS = 'nuxjs',
+  NUXTJS = 'nuxtjs',
   SVELTE = 'svelte',
   ADONISJS = 'adonisjs',
   NESTJS = 'nestjs'
 }
 
-export enum Database {
+export enum DatabaseType {
   POSTGRESQL = 'postgresql',
   MYSQL = 'mysql',
   SQLITE = 'sqlite',
   NONE = 'none'
 }
 
-export enum CacheDatabase {
+export enum CacheType {
   REDIS = 'redis',
   MEMCACHED = 'memcached',
   NONE = 'none'
 }
 
 export enum PackageManager {
-  REDIS = 'redis',
-  MEMCACHED = 'memcached',
-  NONE = 'none'
-}
-
-
-interface AppConfig {
-  appName: string;
-  githubUsername: string;
-  framework: Framework;
-  domain: string;
-  packageManager: PackageManager;
-  database: string;
-  cacheDatabase: string;
-  servers: string[];
-  assetPath?: string;
-}
-
-
-export interface FrameworkConfig {
-  getAssetPath(): string;
-  getEnvironmentVariables(): Record<string, string>;
-  getAccessories(): Record<string, any>;
-  getAppPort(): number;
-  displayAditionalInstructions(): void;
+  NPM = 'npm',
+  YARN = 'yarn',
+  PNPM = 'pnpm'
 }
 
 export interface DatabaseConfig {
-  getEnvironmentVariables(): Record<string, string>;
-  getAccessoryConfig(): Record<string, any>;
+  type: DatabaseType;
+  version: string;
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  database?: string;
 }
 
+export interface ServerConfig {
+  environment: string;
+  hosts: string[];
+  roles?: string[];
+}
+
+export interface HealthcheckConfig {
+  path: string;
+  port: number;
+  interval: number;
+  timeout: number;
+  retries: number;
+}
+
+export interface DeploymentConfig {
+  strategy: 'rolling' | 'all-at-once';
+  max_parallel: number;
+  delay: number;
+  healthcheck: HealthcheckConfig;
+}
 
 export interface Hook {
   command: string;
   local?: boolean;
   remote?: boolean;
+  condition?: string;
+  timeout?: number;
 }
 
 export interface Hooks {
@@ -82,33 +88,31 @@ export interface ShangoConfig {
     framework: Framework;
     domain: string;
     package_manager: PackageManager;
+    port?: number;
   };
   databases: {
-    primary?: {
-      type: string;
-      version: string;
-    };
-    cache?: {
-      type: string;
-      version: string;
-    };
+    primary?: DatabaseConfig;
+    cache?: DatabaseConfig;
   };
-  servers: Array<{
-    environment: string;
-    hosts: string[];
-  }>;
+  servers: ServerConfig[];
+  deployment: DeploymentConfig;
   users: User[];
   hooks: Hooks;
-  deployment: {
-    strategy: 'rolling' | 'all-at-once';
-    max_parallel: number;
-    delay: number;
-    healthcheck: {
-      path: string;
-      port: number;
-      interval: number;
-      timeout: number;
-      retries: number;
-    };
+  volumes?: {
+    name: string;
+    path: string;
+  }[];
+  env?: {
+    clear?: Record<string, string>;
+    secret?: string[];
   };
+}
+
+export interface TemplateOptions {
+  framework: Framework;
+  dockerfile: boolean;
+  githubAction: boolean;
+  templateDir: string;
+  appName: string;
+  githubUsername: string;
 }

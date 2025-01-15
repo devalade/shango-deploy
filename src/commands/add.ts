@@ -1,107 +1,183 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { stringify } from 'yaml';
-import { Framework, Database, CacheDatabase, ShangoConfig, } from '../types/index.js';
-import { parseShangoConfig } from '../util/generate-config.js';
+import { Framework, DatabaseType, CacheType, ShangoConfig, PackageManager } from '../types/index.js';
 import inquirer from 'inquirer';
 import { executeKamal } from '../util/execute-kamal.js';
-import { HighLevelConfigParser } from '../lib/high-level-config-parser/index.js';
+import { TemplateManager } from '../lib/template/index.js';
+import { KamalConfigurationManager } from 'src/lib/kamal-config/index.js';
 
 export async function add(): Promise<void> {
   try {
-    const answers = await inquirer.prompt<Omit<ShangoConfig['app'], 'servers'> & { githubUsername: string; appName: string; server: string }>([
+    // Step 1: Gather information through interactive prompts
+    const answers = await inquirer.prompt([
       {
         type: 'list',
         name: 'framework',
         message: 'Select your framework:',
-        choices: [
-          { name: 'Next.js', value: Framework.NEXTJS },
-          { name: 'Remix', value: Framework.REMIX },
-          { name: 'NuxtJS', value: Framework.NUXTJS },
-          { name: 'Svelte', value: Framework.SVELTE },
-          { name: 'AdonisJS', value: Framework.ADONISJS },
-          { name: 'NestJS', value: Framework.NESTJS }
-        ]
+        choices: Object.values(Framework)
       },
       {
         type: 'list',
         name: 'database',
-        message: 'Select your database:',
-        choices: [
-          { name: 'PostgreSQL', value: Database.POSTGRESQL },
-          { name: 'MySQL', value: Database.MYSQL },
-          { name: 'SQLite', value: Database.SQLITE },
-          { name: 'No Database', value: Database.NONE }
-        ]
+        message: 'Select your primary database:',
+        choices: Object.values(DatabaseType)
       },
       {
         type: 'list',
-        name: 'cacheDatabase',
+        name: 'cache',
         message: 'Select your cache database:',
-        choices: [
-          { name: 'Redis', value: CacheDatabase.REDIS },
-          { name: 'Memcached', value: CacheDatabase.MEMCACHED },
-          { name: 'No Cache Database', value: CacheDatabase.NONE }
-        ]
+        choices: Object.values(CacheType)
       },
       {
         type: 'input',
         name: 'githubUsername',
-        message: 'Enter your github username:',
+        message: 'Enter your GitHub username:',
+        validate: (input) => !!input.trim()
       },
       {
         type: 'input',
         name: 'appName',
-        message: 'Enter your app name:',
+        message: 'Enter your application name:',
+        validate: (input) => !!input.trim()
       },
       {
         type: 'input',
         name: 'domain',
         message: 'Enter your domain:',
+        validate: (input) => /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/.test(input)
       },
       {
         type: 'input',
-        name: 'server',
-        message: 'Enter your ipaddress|domain|subdomain:',
-        validate: (input) => {
-          const regex = /^(?!:\/\/)([a-zA-Z0-9-_]+\.)*[a-zA-Z0-9][a-zA-Z0-9-_]+\.[a-zA-Z]{2,11}$|^(?!:\/\/)(\d{1,3}\.){3}\d{1,3}$/;
-          return regex.test(input) || 'Please enter a valid IP address or subdomain';
-        }
+        name: 'stagingServers',
+        message: 'Enter staging server IPs/hosts (comma-separated):',
+        filter: (input: string) => input.split(',').map(s => s.trim()).filter(Boolean)
       },
+      {
+        type: 'input',
+        name: 'productionServers',
+        message: 'Enter production server IPs/hosts (comma-separated):',
+        filter: (input: string) => input.split(',').map(s => s.trim()).filter(Boolean)
+      }
     ]);
 
-
+    // Step 2: Create ShangoConfig object
     const config: ShangoConfig = {
       app: {
-        appName: answers.appName,
-        githubUsername: answers.githubUsername,
+        name: answers.appName,
+        github_username: answers.githubUsername,
         framework: answers.framework,
         domain: answers.domain,
-        packageManager: answers.packageManager,
-        database: answers.database,
-        cacheDatabase: answers.cacheDatabase,
-        servers: [answers.server],
+        package_manager: PackageManager.NPM,
       },
+      databases: {
+        primary: answers.database !== DatabaseType.NONE ? {
+          type: answers.database,
+          version: getDatabaseVersion(answers.database),
+        } : undefined,
+        cache: answers.cache !== CacheType.NONE ? {
+          type: answers.cache,
+          version: getCacheVersion(answers.cache),
+        } : undefined,
+      },
+      servers: [
+        {
+          environment: 'staging',
+          hosts: answers.stagingServers,
+        },
+        {
+          environment: 'production',
+          hosts: answers.productionServers,
+        }
+      ],
+      deployment: {
+        strategy: 'rolling',
+        max_parallel: 2,
+        delay: 5,
+        healthcheck: {
+          path: '/health',
+          port: 3000,
+          interval: 10,
+          timeout: 2,
+          retries: 3
+        }
+      },
+      users: [
+        {
+          username: 'deploy',
+          groups: ['docker', 'sudo'],
+          create_home: true,
+          force_password_change: true,
+          ssh_keys: [] // Should be populated from system or user input
+        }
+      ],
+      hooks: {
+        pre_deploy: [
+          {
+            command: 'npm run build',
+            local: true
+          }
+        ],
+        post_deploy: [
+          {
+            command: 'npm run db:migrate',
+            remote: true
+          }
+        ]
+      }
     };
 
+    // Step 3: Write shango.yml
     writeFileSync(
       join(process.cwd(), 'shango.yml'),
       stringify(config)
     );
 
-    parseShangoConfig('shango.yml');
-
+    // Step 4: Initialize Kamal
     executeKamal('init');
 
+    // Step 5: Generate Kamal configurations
+    const configManager = new KamalConfigurationManager(config);
+    await configManager.update();
 
-    const parser = new HighLevelConfigParser(config);
-    parser.generate();
+    // Step 6: Generate templates
+    const templateManager = new TemplateManager({
+      framework: answers.framework,
+      dockerfile: true,
+      githubAction: true,
+      templateDir: process.env.SHANGO_TEMPLATE || './.shango-templates',
+      appName: answers.appName,
+      githubUsername: answers.githubUsername,
+    });
+    await templateManager.generate();
 
-    console.log('✨ Configuration created successfully!');
-    console.log('📁 Configuration file: shango.yml');
+    console.log('✨ Project configuration completed successfully!');
+    console.log('📁 Configuration files generated:');
+    console.log('  - shango.yml');
+    console.log('  - .config/deploy.staging.yml');
+    console.log('  - .config/deploy.production.yml');
+    console.log('  - Dockerfile');
+    console.log('  - .github/workflows/deploy.yml');
 
   } catch (error) {
     console.error('Error creating configuration:', error);
     process.exit(1);
+  }
+}
+
+function getDatabaseVersion(type: DatabaseType): string {
+  switch (type) {
+    case DatabaseType.POSTGRESQL: return '14';
+    case DatabaseType.MYSQL: return '8.0';
+    case DatabaseType.SQLITE: return '3';
+    default: return '';
+  }
+}
+
+function getCacheVersion(type: CacheType): string {
+  switch (type) {
+    case CacheType.REDIS: return '7';
+    case CacheType.MEMCACHED: return '1.6';
+    default: return '';
   }
 }
