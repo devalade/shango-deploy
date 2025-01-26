@@ -3,7 +3,7 @@
     "strict": true,
     // node type stripping settings
     // https://nodejs.org/api/typescript.html#type-stripping
-     "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "verbatimModuleSyntax": true,
     "target": "esnext",
@@ -14,9 +14,8 @@
     "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "forceConsistentCasingInFileNames": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts"],
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts"]
 }
