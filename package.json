@@ -1,36 +1,41 @@
 {
-  "name": "shango-deploy",
-  "version": "0.0.1",
-  "description": "Deploy your web app anywhere",
-  "main": "index.js",
+  "name": "shango-deploy-root",
+  "version": "0.0.0",
+  "description": "Shango deploy monorepo",
   "author": "devalade",
-  "license": "ISC",
-  "type": "module",
-  "keywords": [
-    "deploy", "deployment", "continous-deployment","automation"
-  ],
-  "bin": {
-    "shango": "./dist/src/index.js"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devalade/shango-deploy.git"
   },
+  "bugs": {
+    "url": "https://github.com/devalade/shango-deploy/issues"
+  },
+  "keywords": [
+    "deploy",
+    "deployment",
+    "continous-deployment",
+    "automation"
+  ],
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "link-cli": "npm link || true && npm link",
     "dev": "tsc -w",
-    "test": "vitest",
-    "build": "tsc && chmod +x dist/src/index.js",
-    "install:local": "npm run build && npm run link-cli"
+    "test": "vitest"
   },
+  "workspaces": [
+    "packages/*",
+    "docs",
+    "!**/test/**",
+    "examples/*"
+  ],
   "devDependencies": {
-    "@types/inquirer": "^9.0.7",
-    "@types/ssh2": "^1.15.1",
-    "@types/yaml": "^1.9.7",
-    "copyfiles": "^2.4.1",
+    "turbo": "^2.3.4",
     "typescript": "^5.5.4",
     "vitest": "^2.1.8"
   },
-  "dependencies": {
-    "commander": "^12.1.0",
-    "inquirer": "^12.2.0",
-    "ssh2": "^1.15.0",
-    "yaml": "^2.6.1"
-  }
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.3"
 }
