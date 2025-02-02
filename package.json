@@ -19,9 +19,9 @@
   ],
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "link-cli": "npm link || true && npm link",
-    "dev": "tsc -w",
-    "test": "vitest"
+    "link-cli": "turno run link || true && turbo run link",
+    "dev": "turn run dev",
+    "test": "turbo run test"
   },
   "workspaces": [
     "packages/*",

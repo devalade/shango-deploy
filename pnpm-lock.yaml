@@ -58,7 +58,7 @@ importers:
         specifier: ^5
         version: 5.7.3
 
-  packages/shango-deploy:
+  packages/cli:
     dependencies:
       '@octokit/auth-app':
         specifier: ^7.1.4
