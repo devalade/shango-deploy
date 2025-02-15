@@ -15,7 +15,6 @@ Vagrant.configure("2") do |config|
       type: 'qcow2',
       bus: 'virtio',
       cache: 'writeback'
-    
   end
 
   # config.vm.synced_folder ".", "/vagrant", type: "nfs"
