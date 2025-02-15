@@ -19,9 +19,9 @@
   ],
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "link-cli": "turno run link || true && turbo run link",
-    "dev": "turn run dev",
-    "test": "turbo run test"
+    "link-cli": "turbo run shango-cli#link || true && turbo run shango-cli#link",
+    "dev": "turbo run shango-cli#dev",
+    "test": "turbo run shango-cli#test"
   },
   "workspaces": [
     "packages/*",
