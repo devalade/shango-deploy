@@ -16,11 +16,10 @@
     "shango": "./dist/index.js"
   },
   "scripts": {
-    "link": "pnpm link --global",
     "dev": "tsc -w",
     "test": "vitest",
     "build": "tsc && chmod +x dist/index.js",
-    "install:local": "npm run build && npm run link-cli"
+    "local": "pnpm run build && pnpm unlink && pnpm link . && chmod +x dist/index.js"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",

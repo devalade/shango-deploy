@@ -1,11 +1,15 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    "shango-cli#build": {
+    "build": {
       "outputs": ["dist/**"]
     },
-    "shango-cli#link": {
-      "dependsOn": ["^shango-cli#build"],
+    "link": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "local": {
+      "dependsOn": ["^build"],
       "outputs": []
     },
     "check-types": {
