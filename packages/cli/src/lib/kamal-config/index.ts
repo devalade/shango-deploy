@@ -1,18 +1,26 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'fs';
 import { join } from 'path';
 import { parse as parseYAML, stringify } from 'yaml';
 import { type ValidatedShangoConfig } from '../config/validator.ts';
 import { type KamalConfig, KamalConfigurationError } from './types.ts';
 import { mergeConfigurations } from './merger.ts';
 import { KamalConfigSchema } from './validator.ts';
+import { DatabaseType } from '../../types/index.ts';
+
+interface otherConfig {
+  database: DatabaseType;
+  inMemoryKVDatabase: boolean;
+}
 
 export class KamalConfigurationManager {
   private config: ValidatedShangoConfig;
   private kamalConfigPath: string;
-  public envConfig: ValidatedShangoConfig['environment'][number];
+  private envConfig: ValidatedShangoConfig['environment'][number];
+  private otherConfig: otherConfig;
 
-  constructor(config: ValidatedShangoConfig) {
+  constructor(config: ValidatedShangoConfig, otherConfig: otherConfig) {
     this.config = config;
+    this.otherConfig = otherConfig;
     this.kamalConfigPath = join(
       process.cwd(),
       this.config.environment[0].config,
@@ -27,6 +35,9 @@ export class KamalConfigurationManager {
           process.cwd(),
           this.config.environment[index].config,
         );
+        console.log({ envPath: this.kamalConfigPath });
+
+        this.prepareEnvironmentYamlFile(this.kamalConfigPath);
 
         this.envConfig = this.config.environment[0];
         await this.waitForKamalConfig();
@@ -39,7 +50,7 @@ export class KamalConfigurationManager {
       }
     } catch (error) {
       throw new KamalConfigurationError(
-        `Failed to update Kamal configuration: ${error}`,
+        `Failed to update  deployment configuration: ${error}`,
       );
     }
   }
@@ -49,7 +60,7 @@ export class KamalConfigurationManager {
     while (!existsSync(this.kamalConfigPath)) {
       if (Date.now() - startTime > timeout) {
         throw new KamalConfigurationError(
-          'Timeout waiting for kamal.yml to be generated',
+          `Timeout waiting for ${this.kamalConfigPath} to be generated`,
         );
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -125,45 +136,98 @@ export class KamalConfigurationManager {
     const accessories: Record<string, any> = {};
 
     if (true) {
-      accessories.db = this.generateDatabaseConfig('postgres');
+      accessories.db = this.generateDatabaseConfig();
     }
 
     if (true) {
-      accessories.cache = this.generateCacheConfig('redis');
+      accessories.cache = this.generateCacheConfig();
     }
 
     return accessories;
   }
 
-  private generateDatabaseConfig(dbConfig: any) {
+  private generateDatabaseConfig() {
+    if (this.otherConfig.database === DatabaseType.POSTGRESQL) {
+      return this.getPostgreSQLConfig();
+    } else if (this.otherConfig.database === DatabaseType.MYSQL) {
+      return this.getMysqlConfig();
+    }
+    return {};
+  }
+
+  private getPostgreSQLConfig() {
     return {
-      image: `${dbConfig.type}:${dbConfig.version}-alpine`,
-      host: `db.${this.config.app.domain}`,
-      port: dbConfig.port || 5432,
+      image: 'postgres:15',
+      host: '192.168.0.2',
+      port: 5432,
       env: {
         clear: {
-          POSTGRES_DB: this.config.app.name.replace(/-/g, '_'),
+          POSTGRES_DB: 'mydatabase',
+          POSTGRES_USER: 'postgres',
           POSTGRES_HOST_AUTH_METHOD: 'trust',
         },
+        secret: ['POSTGRES_PASSWORD'],
       },
-      volumes: ['data:/var/lib/postgresql/data'],
+      files: [
+        'config/postgres/postgresql.conf:/etc/postgresql/postgresql.conf',
+        'config/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf',
+        'db/init.sql:/docker-entrypoint-initdb.d/init.sql',
+      ],
+      directories: ['data:/var/lib/postgresql/data'],
+    };
+  }
+  private getMysqlConfig() {
+    return {
+      image: 'mysql:8.0',
+      host: '192.168.0.2',
+      port: 3306,
+      env: {
+        clear: {
+          MYSQL_ROOT_HOST: '%',
+        },
+        secret: ['MYSQL_ROOT_PASSWORD'],
+      },
+      files: [
+        'config/mysql/production.cnf:/etc/mysql/my.cnf',
+        'db/production.sql:/docker-entrypoint-initdb.d/setup.sql',
+      ],
+      directories: ['data:/var/lib/mysql'],
     };
   }
 
-  private generateCacheConfig(cacheConfig: any) {
-    return {
-      image: `${cacheConfig.type}:${cacheConfig.version}-alpine`,
-      host: `cache.${this.config.app.domain}`,
-      port: cacheConfig.port || 6379,
-      volumes: ['data:/data'],
-    };
+  private generateCacheConfig() {
+    if (this.otherConfig.inMemoryKVDatabase) {
+      return {
+        image: 'valkey/valkey:8',
+        host: this.envConfig.servers[0],
+        port: 6379,
+        volumes: ['data:/data'],
+      };
+    }
+    return {};
   }
 
   private writeKamalConfig(config: KamalConfig): void {
+    console.log('writeKamalConfig', { path: this.kamalConfigPath });
     try {
       writeFileSync(this.kamalConfigPath, stringify(config));
     } catch (error) {
-      throw new KamalConfigurationError(`Failed to write kamal.yml: ${error}`);
+      throw new KamalConfigurationError(
+        `Failed to write ${this.kamalConfigPath}: ${error}`,
+      );
+    }
+  }
+
+  private prepareEnvironmentYamlFile(path: string) {
+    if (existsSync(path)) return;
+    const defaultConfig = 'config/deploy.yml';
+    if (!existsSync(path)) {
+      console.log('prepareEnvironmentYamlFile', { path: this.kamalConfigPath });
+      copyFileSync(defaultConfig, this.kamalConfigPath);
+    } else {
+      throw new KamalConfigurationError(
+        `Failed to generate ${this.kamalConfigPath}`,
+      );
     }
   }
 }

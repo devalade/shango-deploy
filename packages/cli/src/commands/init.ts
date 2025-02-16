@@ -1,146 +1,110 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { stringify } from 'yaml';
-import { Framework, DatabaseType, CacheType, type ShangoConfig, PackageManager } from '../types/index.ts';
+import {
+  Framework,
+  DatabaseType,
+  CacheType,
+  type ShangoConfig,
+} from '../types/index.ts';
 import inquirer from 'inquirer';
 import { executeKamal } from '../util/execute-kamal.ts';
 import { TemplateManager } from '../lib/template/index.ts';
 import { KamalConfigurationManager } from '../lib/kamal-config/index.ts';
 
-export async function add(): Promise<void> {
+export async function init(): Promise<void> {
   try {
-    // Step 1: Gather information through interactive prompts
     const answers = await inquirer.prompt([
       {
         type: 'list',
         name: 'framework',
         message: 'Select your framework:',
-        choices: Object.values(Framework)
+        choices: Object.values(Framework),
       },
       {
         type: 'list',
         name: 'database',
         message: 'Select your primary database:',
-        choices: Object.values(DatabaseType)
+        choices: Object.values(DatabaseType),
       },
       {
-        type: 'list',
-        name: 'cache',
-        message: 'Select your cache database:',
-        choices: Object.values(CacheType)
+        type: 'confirm',
+        name: 'inMemoryKVDatabase',
+        message: 'Do you want to use redis ?',
       },
       {
         type: 'input',
         name: 'githubUsername',
         message: 'Enter your GitHub username:',
-        validate: (input) => !!input.trim()
+        validate: (input) => !!input.trim(),
       },
       {
         type: 'input',
         name: 'appName',
         message: 'Enter your application name:',
-        validate: (input) => !!input.trim()
+        validate: (input) => !!input.trim(),
       },
       {
         type: 'input',
         name: 'domain',
         message: 'Enter your domain:',
-        validate: (input) => /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/.test(input)
+        validate: (input) =>
+          /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/.test(input),
       },
       {
         type: 'input',
-        name: 'stagingServers',
-        message: 'Enter staging server IPs/hosts (comma-separated):',
-        filter: (input: string) => input.split(',').map(s => s.trim()).filter(Boolean)
+        name: 'environment',
+        message:
+          'Enter the available deployment environment seperate by comma:',
+        validate: (input) => !!input.trim(),
       },
-      {
-        type: 'input',
-        name: 'productionServers',
-        message: 'Enter production server IPs/hosts (comma-separated):',
-        filter: (input: string) => input.split(',').map(s => s.trim()).filter(Boolean)
-      }
     ]);
 
-    // Step 2: Create ShangoConfig object
     const config: ShangoConfig = {
       app: {
         name: answers.appName,
         github_username: answers.githubUsername,
         framework: answers.framework,
         domain: answers.domain,
-        package_manager: PackageManager.NPM,
+        port: 3000,
       },
-      databases: {
-        primary: answers.database !== DatabaseType.NONE ? {
-          type: answers.database,
-          version: getDatabaseVersion(answers.database),
-        } : undefined,
-        cache: answers.cache !== CacheType.NONE ? {
-          type: answers.cache,
-          version: getCacheVersion(answers.cache),
-        } : undefined,
-      },
-      servers: [
-        {
-          environment: 'staging',
-          hosts: answers.stagingServers,
-        },
-        {
-          environment: 'production',
-          hosts: answers.productionServers,
-        }
-      ],
-      deployment: {
-        strategy: 'rolling',
-        max_parallel: 2,
-        delay: 5,
-        healthcheck: {
-          path: '/health',
-          port: 3000,
-          interval: 10,
-          timeout: 2,
-          retries: 3
-        }
-      },
+      environment: await getEnvironment(answers.environment),
       users: [
         {
           username: 'deploy',
+          password: '',
           groups: ['docker', 'sudo'],
-          create_home: true,
-          force_password_change: true,
-          ssh_keys: [] // Should be populated from system or user input
-        }
+          authorized_keys: [{ public_key: '' }],
+        },
       ],
       hooks: {
         pre_deploy: [
           {
             command: 'npm run build',
-            local: true
-          }
+            local: true,
+          },
         ],
         post_deploy: [
           {
             command: 'npm run db:migrate',
-            remote: true
-          }
-        ]
-      }
+            remote: true,
+          },
+        ],
+      },
     };
 
-    // Step 3: Write shango.yml
-    writeFileSync(
-      join(process.cwd(), 'shango.yml'),
-      stringify(config)
-    );
+    writeFileSync(join(process.cwd(), 'shango.yml'), stringify(config));
 
-    // Step 4: Initialize Kamal
     executeKamal('init');
 
-    // Step 5: Generate Kamal configurations
-    const configManager = new KamalConfigurationManager(config);
+    const configManager = new KamalConfigurationManager(config, {
+      database: answers.database,
+      inMemoryKVDatabase: answers.inMemoryKVDatabase,
+    });
     await configManager.update();
 
-    // Step 6: Generate templates
+    process.exit(1);
+
     const templateManager = new TemplateManager({
       framework: answers.framework,
       dockerfile: true,
@@ -158,26 +122,42 @@ export async function add(): Promise<void> {
     console.log('  - .config/deploy.production.yml');
     console.log('  - Dockerfile');
     console.log('  - .github/workflows/deploy.yml');
-
   } catch (error) {
     console.error('Error creating configuration:', error);
     process.exit(1);
   }
 }
 
-function getDatabaseVersion(type: DatabaseType): string {
-  switch (type) {
-    case DatabaseType.POSTGRESQL: return '14';
-    case DatabaseType.MYSQL: return '8.0';
-    case DatabaseType.SQLITE: return '3';
-    default: return '';
-  }
-}
+async function getEnvironment(
+  environment: string,
+): Promise<ShangoConfig['environment']> {
+  const environments: ShangoConfig['environment'] = [];
 
-function getCacheVersion(type: CacheType): string {
-  switch (type) {
-    case CacheType.REDIS: return '7';
-    case CacheType.MEMCACHED: return '1.6';
-    default: return '';
+  for (let index: number = 0; index < environment.split(',').length; index++) {
+    const name = environment.split(',')[index] as string;
+    const environmentAnswers = await inquirer.prompt<{
+      servers: string;
+      hosts: string;
+    }>([
+      {
+        type: 'input',
+        name: 'servers',
+        message: `Enter the available servers for the  ${name} seperate by comma:`,
+        validate: (input) => !!input.trim(),
+      },
+      {
+        type: 'input',
+        name: 'hosts',
+        message: `Enter the available hosts for the ${name} seperate by comma:`,
+        validate: (input) => !!input.trim(),
+      },
+    ]);
+    environments.push({
+      name: name,
+      config: `./config/deploy.${environment}.yml`,
+      hosts: environmentAnswers.hosts.split(',') as string[],
+      servers: environmentAnswers.servers.split(',') as string[],
+    });
   }
+  return environments;
 }

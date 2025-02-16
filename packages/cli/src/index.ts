@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { add } from './commands/init.ts';
+import { init } from './commands/init.ts';
 import { kamal } from './commands/kl.ts';
 import { provision } from './commands/provision.ts';
 import { syncSecrets } from './commands/sync-secrets.ts';
@@ -32,9 +32,9 @@ program
   .action(provision);
 
 program
-  .command('add')
+  .command('init')
   .description('Generate a new Shango configuration')
-  .action(add);
+  .action(init);
 
 program
   .command('kl')
