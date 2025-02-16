@@ -1,6 +1,7 @@
 import { SSHManager } from '../ssh/ssh-manager.ts';
 import { ServerRequirementsValidator } from './requirements-validator.ts';
 import { type User } from '../../types/index.ts';
+import { ProgressReporter } from '../progress-reporter/index.ts';
 
 interface TaskResult {
   changed: boolean;
@@ -20,22 +21,34 @@ export class ServerSetup {
   private validator: ServerRequirementsValidator;
   private maxRetries = 3;
   private retryDelay = 5000; // 5 seconds
+  private reporter: ProgressReporter;
 
   constructor(ssh: SSHManager) {
     this.ssh = ssh;
     this.validator = new ServerRequirementsValidator(ssh);
+    this.reporter = new ProgressReporter();
   }
 
   private async executeWithRetry(
     command: string,
     description: string,
+    step: number,
+    total: number,
     check?: () => Promise<boolean>,
   ): Promise<TaskResult> {
     let retries = 0;
+    this.reporter.startTask({
+      step,
+      total,
+      description,
+      status: 'running',
+    });
+
     while (retries < this.maxRetries) {
       try {
         // Check if task needs to be executed
         if (check && !(await check())) {
+          this.reporter.finishTask('skipped');
           return {
             changed: false,
             failed: false,
@@ -43,7 +56,9 @@ export class ServerSetup {
           };
         }
 
-        await this.ssh.executeCommand(command);
+        const { stdout } = await this.ssh.executeCommand(command);
+        this.reporter.updateOutput(stdout);
+        this.reporter.finishTask('success');
         return {
           changed: true,
           failed: false,
@@ -53,6 +68,7 @@ export class ServerSetup {
       } catch (error) {
         retries++;
         if (retries === this.maxRetries) {
+          this.reporter.finishTask('failed', error);
           return {
             changed: false,
             failed: true,
@@ -78,25 +94,25 @@ export class ServerSetup {
       );
       return stdout.trim() === '';
     } catch {
-      return true;
+      return true; // Package needs to be installed
     }
   }
 
   private async checkDockerInstallation(): Promise<boolean> {
     try {
       await this.ssh.executeCommand('docker --version');
-      return false;
+      return false; // Docker is already installed
     } catch {
-      return true;
+      return true; // Docker needs to be installed
     }
   }
 
   private async checkUserExists(username: string): Promise<boolean> {
     try {
       await this.ssh.executeCommand(`id -u ${username}`);
-      return false;
+      return false; // User exists
     } catch {
-      return true;
+      return true; // User needs to be created
     }
   }
 
@@ -130,13 +146,17 @@ export class ServerSetup {
       },
     ];
 
+    let step = 1;
     const results: TaskResult[] = [];
     for (const task of tasks) {
       const result = await this.executeWithRetry(
         task.command,
         task.description,
+        step,
+        tasks.length,
       );
       results.push(result);
+      step++;
       if (result.failed) break;
     }
     return results;
@@ -145,7 +165,7 @@ export class ServerSetup {
   async installPackages(packages: PackageState[]): Promise<TaskResult[]> {
     console.log('📦 Installing packages...');
     const results: TaskResult[] = [];
-
+    let step = 1;
     for (const pkg of packages) {
       const needsInstall = await this.checkPackage(pkg.name);
       if (!needsInstall && pkg.state !== 'latest') {
@@ -165,8 +185,11 @@ export class ServerSetup {
       const result = await this.executeWithRetry(
         command,
         `Install package ${pkg.name}`,
+        step,
+        packages.length,
       );
       results.push(result);
+      step++;
       if (result.failed) break;
     }
     return results;
@@ -190,12 +213,16 @@ export class ServerSetup {
     ];
 
     const results: TaskResult[] = [];
+    let step = 1;
     for (const rule of rules) {
       const result = await this.executeWithRetry(
         rule.command,
         rule.description,
+        step,
+        rules.length,
       );
       results.push(result);
+      step++;
       if (result.failed) break;
     }
     return results;
@@ -234,12 +261,16 @@ export class ServerSetup {
     ];
 
     const results: TaskResult[] = [];
+    let step = 1;
     for (const task of tasks) {
       const result = await this.executeWithRetry(
         task.command,
         task.description,
+        step,
+        tasks.length,
       );
       results.push(result);
+      step++;
       if (result.failed) break;
     }
     return results;
@@ -297,13 +328,16 @@ export class ServerSetup {
           description: `Force password change for ${user.username}`,
         });
       }
-
+      let step = 1;
       for (const task of tasks) {
         const result = await this.executeWithRetry(
           task.command,
           task.description,
+          step,
+          tasks.length,
         );
         results.push(result);
+        step++;
         if (result.failed) break;
       }
     }
@@ -330,12 +364,16 @@ export class ServerSetup {
       },
     ];
 
+    let step = 1;
     for (const service of services) {
       const result = await this.executeWithRetry(
         service.command,
         service.description,
+        step,
+        services.length,
       );
       results.push(result);
+      step++;
       if (result.failed) break;
     }
     return results;
