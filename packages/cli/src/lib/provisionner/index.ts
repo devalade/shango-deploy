@@ -20,16 +20,13 @@ export class ServerProvisioner {
 
   async provision(): Promise<void> {
     try {
-      // Execute pre-provision hooks
-      await this.hookManager.executeHooks(HookType.PRE_PROVISION);
+      // TODO: Implement prehook execute
 
-      // Provision each server in each environment
-      for (const serverConfig of this.config.servers) {
-        console.log(
-          `\n🚀 Provisioning ${serverConfig.environment} environment...`,
-        );
-
-        for (const host of serverConfig.hosts) {
+      /// TODO: Merge all the hosts and set them up once
+      for (const { name, config, hosts } of this.config.environment) {
+        console.log(`\n🚀 Provisioning ${name} environment...`);
+        const _hosts = Array.isArray(hosts) ? hosts : [hosts];
+        for (const host of _hosts) {
           console.log(`\n📦 Setting up server: ${host}`);
 
           const ssh = new SSHManager({

@@ -133,8 +133,43 @@ export class ServerSetup {
     }
   }
 
+  private async clearPackageManagerLocks(): Promise<TaskResult> {
+    const commands = [
+      'rm -f /var/lib/apt/lists/lock',
+      'rm -f /var/cache/apt/archives/lock',
+      'rm -f /var/lib/dpkg/lock*',
+      'dpkg --configure -a',
+    ];
+
+    const description = 'Clear package manager locks';
+
+    try {
+      for (const command of commands) {
+        await this.ssh.executeCommand(command);
+      }
+      return {
+        changed: true,
+        failed: false,
+        msg: 'Successfully cleared package manager locks',
+      };
+    } catch (error) {
+      return {
+        changed: false,
+        failed: true,
+        msg: `Failed to clear package manager locks: ${error}`,
+      };
+    }
+  }
+
   async updateSystem(): Promise<TaskResult[]> {
     console.log('📥 Updating system packages...');
+
+    // Clear locks first
+    const clearResult = await this.clearPackageManagerLocks();
+    if (clearResult.failed) {
+      return [clearResult];
+    }
+
     const tasks = [
       {
         command: 'apt-get update',
@@ -147,7 +182,7 @@ export class ServerSetup {
     ];
 
     let step = 1;
-    const results: TaskResult[] = [];
+    const results: TaskResult[] = [clearResult];
     for (const task of tasks) {
       const result = await this.executeWithRetry(
         task.command,
@@ -242,6 +277,17 @@ export class ServerSetup {
     }
 
     const tasks = [
+      // Clean up any previous failed attempts
+      {
+        command: 'rm -f get-docker.sh',
+        description: 'Clean up previous Docker installation attempts',
+      },
+      // Install prerequisites
+      {
+        command:
+          'DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl gnupg',
+        description: 'Install Docker prerequisites',
+      },
       {
         command: 'curl -fsSL https://get.docker.com -o get-docker.sh',
         description: 'Download Docker installation script',
@@ -257,6 +303,11 @@ export class ServerSetup {
       {
         command: 'systemctl start docker',
         description: 'Start Docker service',
+      },
+      // Clean up
+      {
+        command: 'rm -f get-docker.sh',
+        description: 'Clean up Docker installation files',
       },
     ];
 
