@@ -1,0 +1,29 @@
+app:
+  name: nextjs-exemple
+  github_username: devalade
+  framework: nextjs
+  domain: test.local
+  port: 3000
+
+environment:
+  - name: production
+    config: "./config/deploy.production.yml"
+    hosts: 192.168.121.157
+    servers: 192.168.121.157
+
+users:
+  - username: deploy
+    groups:
+      - docker
+      - sudo
+    create_home: true
+    force_password_change: true
+    ssh_keys: []
+
+hooks:
+  pre_deploy:
+    - command: npm run build
+      local: true
+  post_deploy:
+    - command: npm run db:migrate
+      remote: true
