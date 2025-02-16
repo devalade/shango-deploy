@@ -3,34 +3,44 @@ import { join } from 'path';
 import { parse as parseYAML, stringify } from 'yaml';
 import { type ValidatedShangoConfig } from '../config/validator.ts';
 import { type KamalConfig, KamalConfigurationError } from './types.ts';
-import { validateKamalConfig } from './validator.ts';
 import { mergeConfigurations } from './merger.ts';
+import { KamalConfigSchema } from './validator.ts';
 
 export class KamalConfigurationManager {
   private config: ValidatedShangoConfig;
   private kamalConfigPath: string;
+  public envConfig: ValidatedShangoConfig['environment'][number];
 
   constructor(config: ValidatedShangoConfig) {
     this.config = config;
-    this.kamalConfigPath = join(process.cwd(), '.config', 'kamal.yml');
+    this.kamalConfigPath = join(
+      process.cwd(),
+      this.config.environment[0].config,
+    );
+    this.envConfig = this.config.environment[0];
   }
 
   async update(): Promise<void> {
     try {
-      // Wait for kamal.yml to be generated
-      await this.waitForKamalConfig();
+      for (let index = 0; index < this.config.environment.length; index++) {
+        this.kamalConfigPath = join(
+          process.cwd(),
+          this.config.environment[index].config,
+        );
 
-      // Read existing kamal.yml
-      const existingConfig = this.readKamalConfig();
+        this.envConfig = this.config.environment[0];
+        await this.waitForKamalConfig();
 
-      // Merge with our configuration
-      const updatedConfig = this.generateUpdatedConfig(existingConfig);
+        const existingConfig = this.readKamalConfig();
 
-      // Write back the updated configuration
-      this.writeKamalConfig(updatedConfig);
+        const updatedConfig = this.generateUpdatedConfig(existingConfig);
 
+        this.writeKamalConfig(updatedConfig);
+      }
     } catch (error) {
-      throw new KamalConfigurationError(`Failed to update Kamal configuration: ${error}`);
+      throw new KamalConfigurationError(
+        `Failed to update Kamal configuration: ${error}`,
+      );
     }
   }
 
@@ -38,9 +48,11 @@ export class KamalConfigurationManager {
     const startTime = Date.now();
     while (!existsSync(this.kamalConfigPath)) {
       if (Date.now() - startTime > timeout) {
-        throw new KamalConfigurationError('Timeout waiting for kamal.yml to be generated');
+        throw new KamalConfigurationError(
+          'Timeout waiting for kamal.yml to be generated',
+        );
       }
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
@@ -48,7 +60,7 @@ export class KamalConfigurationManager {
     try {
       const content = readFileSync(this.kamalConfigPath, 'utf8');
       const config = parseYAML(content);
-      return validateKamalConfig(config);
+      return KamalConfigSchema.parse(config);
     } catch (error) {
       throw new KamalConfigurationError(`Failed to read kamal.yml: ${error}`);
     }
@@ -65,48 +77,59 @@ export class KamalConfigurationManager {
       registry: {
         server: 'ghcr.io',
         username: this.config.app.github_username,
-        password: ['GITHUB_TOKEN']
+        password: ['GITHUB_TOKEN'],
       },
       servers: this.generateServersConfig(),
+      proxy: this.generateProxyConfig(),
       env: this.generateEnvConfig(),
       accessories: this.generateAccessoriesConfig(),
-      healthcheck: this.config.deployment.healthcheck,
-      rolling_deploy: {
-        max_parallel: this.config.deployment.max_parallel,
-        delay: this.config.deployment.delay
-      }
     };
   }
 
-  private generateServersConfig(): Record<string, string[]> {
-    const servers: Record<string, string[]> = {};
-
-    this.config.servers.forEach(serverConfig => {
-      servers[serverConfig.environment] = serverConfig.hosts;
-    });
+  private generateServersConfig(): KamalConfig['servers'] {
+    const servers: KamalConfig['servers'] = {
+      web: Array.isArray(this.envConfig.servers)
+        ? this.envConfig.servers
+        : [this.envConfig.servers],
+    };
 
     return servers;
+  }
+
+  private generateProxyConfig(): KamalConfig['proxy'] {
+    const proxy: KamalConfig['proxy'] = {
+      app_port: this.config.app.port,
+      ssl: true,
+      healthcheck: {
+        interval: 3,
+        path: '/up',
+        timeout: 3,
+      },
+    };
+
+    return Array.isArray(this.envConfig.hosts)
+      ? { ...proxy, hosts: this.envConfig.hosts }
+      : { ...proxy, host: this.envConfig.hosts };
   }
 
   private generateEnvConfig() {
     return {
       clear: {
         NODE_ENV: 'production',
-        ...this.config.env?.clear
       },
-      secret: this.config.env?.secret || []
+      secret: [],
     };
   }
 
   private generateAccessoriesConfig() {
     const accessories: Record<string, any> = {};
 
-    if (this.config.databases.primary) {
-      accessories.db = this.generateDatabaseConfig(this.config.databases.primary);
+    if (true) {
+      accessories.db = this.generateDatabaseConfig('postgres');
     }
 
-    if (this.config.databases.cache) {
-      accessories.cache = this.generateCacheConfig(this.config.databases.cache);
+    if (true) {
+      accessories.cache = this.generateCacheConfig('redis');
     }
 
     return accessories;
@@ -120,10 +143,10 @@ export class KamalConfigurationManager {
       env: {
         clear: {
           POSTGRES_DB: this.config.app.name.replace(/-/g, '_'),
-          POSTGRES_HOST_AUTH_METHOD: 'trust'
-        }
+          POSTGRES_HOST_AUTH_METHOD: 'trust',
+        },
       },
-      volumes: ['data:/var/lib/postgresql/data']
+      volumes: ['data:/var/lib/postgresql/data'],
     };
   }
 
@@ -132,7 +155,7 @@ export class KamalConfigurationManager {
       image: `${cacheConfig.type}:${cacheConfig.version}-alpine`,
       host: `cache.${this.config.app.domain}`,
       port: cacheConfig.port || 6379,
-      volumes: ['data:/data']
+      volumes: ['data:/data'],
     };
   }
 
