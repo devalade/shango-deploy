@@ -1,30 +1,29 @@
-
 export enum Framework {
-  NEXTJS = 'nex.ts',
-  REMIX = 'remix',
-  NUXTJS = 'nux.ts',
+  NEXTJS = 'nextjs',
+  REMIX = 'react-router',
+  NUXTJS = 'nuxt',
   SVELTE = 'svelte',
-  ADONISJS = 'adoni.ts',
-  NESTJS = 'nes.ts'
+  ADONISJS = 'adonisjs',
+  NESTJS = 'nestjs',
 }
 
 export enum DatabaseType {
   POSTGRESQL = 'postgresql',
   MYSQL = 'mysql',
   SQLITE = 'sqlite',
-  NONE = 'none'
+  NONE = 'none',
 }
 
 export enum CacheType {
   REDIS = 'redis',
   MEMCACHED = 'memcached',
-  NONE = 'none'
+  NONE = 'none',
 }
 
 export enum PackageManager {
   NPM = 'npm',
   YARN = 'yarn',
-  PNPM = 'pnpm'
+  PNPM = 'pnpm',
 }
 
 export interface DatabaseConfig {
@@ -87,25 +86,16 @@ export interface ShangoConfig {
     github_username: string;
     framework: Framework;
     domain: string;
-    package_manager: PackageManager;
-    port?: number;
+    port: number;
   };
-  databases: {
-    primary?: DatabaseConfig;
-    cache?: DatabaseConfig;
-  };
-  servers: ServerConfig[];
-  deployment: DeploymentConfig;
+  environment: {
+    name: string;
+    config: string;
+    hosts: string | string[];
+    servers: string | string[];
+  }[];
   users: User[];
   hooks: Hooks;
-  volumes?: {
-    name: string;
-    path: string;
-  }[];
-  env?: {
-    clear?: Record<string, string>;
-    secret?: string[];
-  };
 }
 
 export interface TemplateOptions {
