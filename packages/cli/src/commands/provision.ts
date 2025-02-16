@@ -25,7 +25,6 @@ export async function provision(options: {
       port: options.port,
       privateKey: options.i,
     });
-    console.log('Connected successfully!');
     await provisioner.provision();
 
     console.log('✨ Server provisioning completed successfully!');
