@@ -34,7 +34,7 @@ export class ProgressReporter {
     }
   }
 
-  finishTask(status: 'success' | 'failed' | 'skipped', error?: string): void {
+  finishTask(status: 'success' | 'failed' | 'skipped', error?: any): void {
     if (!this.spinner) return;
 
     const duration = ((Date.now() - this.startTime) / 1000).toFixed(1);
