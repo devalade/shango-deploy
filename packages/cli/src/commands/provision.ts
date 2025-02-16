@@ -1,24 +1,36 @@
-import { type ShangoConfig } from "../types/index.ts";
-import { ServerProvisioner } from "../lib/provisionner/index.ts";
-import { loadConfigFile } from "../util/load-config-file.ts";
-import { ConfigurationMerger } from "../lib/config/merger.ts";
+import { type ShangoConfig } from '../types/index.ts';
+import { ServerProvisioner } from '../lib/provisionner/index.ts';
+import { loadConfigFile } from '../util/load-config-file.ts';
+import { ConfigurationMerger } from '../lib/config/merger.ts';
 
-export async function provision(environment?: string): Promise<void> {
+export async function provision(options: {
+  user: string;
+  environment: string;
+  port: number;
+  i: string;
+}): Promise<void> {
   try {
     const baseConfig: ShangoConfig = await loadConfigFile();
-
-    const config = environment
-      ? ConfigurationMerger.mergeWithEnvironment(baseConfig, environment)
+    const config = options.environment
+      ? ConfigurationMerger.mergeWithEnvironment(
+          baseConfig,
+          options.environment,
+        )
       : baseConfig;
 
-    console.log("🚀 Starting server provisioning...");
+    console.log('🚀 Starting server provisioning...');
 
-    const provisioner = new ServerProvisioner(config);
+    const provisioner = new ServerProvisioner(config, {
+      username: options.user,
+      port: options.port,
+      privateKey: options.i,
+    });
+    console.log('Connected successfully!');
     await provisioner.provision();
 
-    console.log("✨ Server provisioning completed successfully!");
+    console.log('✨ Server provisioning completed successfully!');
   } catch (error) {
-    console.error("❌ Error during provisioning:", error);
+    console.error('❌ Error during provisioning:', error);
     process.exit(1);
   }
 }

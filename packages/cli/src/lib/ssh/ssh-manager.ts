@@ -16,10 +16,7 @@ export class SSHManager {
   private client: Client;
 
   constructor(config: SSHConfig) {
-    this.config = {
-      port: 22,
-      ...config,
-    };
+    this.config = config;
     this.client = new Client();
   }
 

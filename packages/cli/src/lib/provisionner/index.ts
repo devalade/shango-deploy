@@ -1,16 +1,21 @@
 import { type ShangoConfig } from '../../types/index.ts';
 import { ServerSetup } from './server-setup.ts';
 import { HookManager } from '../hooks/hook-manager.ts';
-import { SSHManager } from '../ssh/ssh-manager.ts';
+import { SSHManager, type SSHConfig } from '../ssh/ssh-manager.ts';
 import { HookType } from '../hooks/types.ts';
 
 export class ServerProvisioner {
   private config: ShangoConfig;
   private hookManager: HookManager;
+  private sshConfig: Omit<SSHConfig, 'password' | 'host'>;
 
-  constructor(config: ShangoConfig) {
+  constructor(
+    config: ShangoConfig,
+    sshConfig: Omit<SSHConfig, 'password' | 'host'>,
+  ) {
     this.config = config;
     this.hookManager = new HookManager();
+    this.sshConfig = sshConfig;
   }
 
   async provision(): Promise<void> {
@@ -20,15 +25,16 @@ export class ServerProvisioner {
 
       // Provision each server in each environment
       for (const serverConfig of this.config.servers) {
-        console.log(`\n🚀 Provisioning ${serverConfig.environment} environment...`);
+        console.log(
+          `\n🚀 Provisioning ${serverConfig.environment} environment...`,
+        );
 
         for (const host of serverConfig.hosts) {
           console.log(`\n📦 Setting up server: ${host}`);
 
           const ssh = new SSHManager({
             host,
-            username: 'root',
-            port: 22
+            ...this.sshConfig,
           });
 
           try {
