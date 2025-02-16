@@ -16,7 +16,19 @@ program
 program
   .command('provision')
   .description('Provision servers with required configurations')
-  .argument('[environment]', 'Target environment (staging/production)')
+  .option(
+    '-e, --environment <value>',
+    'Target environment (staging/production)',
+    'production',
+  )
+  .option('-i <path>', 'identity file or private key')
+  .option('-u, --user <value>', 'The username of your host machine', 'root')
+  .option(
+    '-p, --port <number>',
+    'The port to SSH into to the server',
+    parseInt,
+    22,
+  )
   .action(provision);
 
 program
@@ -29,7 +41,6 @@ program
   .argument('[cmd...]')
   .description('This is an alias to the kamal deploy')
   .action(kamal);
-
 
 program
   .command('sync-secrets')
