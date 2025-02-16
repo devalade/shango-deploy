@@ -4,14 +4,16 @@ import deepmerge from 'deepmerge';
 export class ConfigurationMerger {
   static mergeWithEnvironment(
     baseConfig: ValidatedShangoConfig,
-    environment: string
+    environment: string,
   ): ValidatedShangoConfig {
-    const environmentConfig = baseConfig.servers.find(
-      server => server.environment === environment
+    const environmentConfig = baseConfig.environment.find(
+      (env) => env.name === environment,
     );
 
     if (!environmentConfig) {
-      throw new Error(`Environment '${environment}' not found in configuration`);
+      throw new Error(
+        `Environment '${environment}' not found in configuration`,
+      );
     }
 
     // Create a new config with environment-specific values
@@ -20,9 +22,9 @@ export class ConfigurationMerger {
       env: {
         clear: {
           NODE_ENV: environment,
-          ...baseConfig.env?.clear
-        }
-      }
+          ...baseConfig.env?.clear,
+        },
+      },
     });
   }
 }

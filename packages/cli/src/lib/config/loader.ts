@@ -1,13 +1,13 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { parse as parseYAML } from 'yaml';
-import { type ValidatedShangoConfig, validateConfig } from './validator.ts';
+import { type ValidatedShangoConfig, ConfigSchema } from './validator.ts';
 
 export class ConfigurationLoader {
   private static instance: ConfigurationLoader;
   private config: ValidatedShangoConfig | null = null;
 
-  private constructor() { }
+  private constructor() {}
 
   static getInstance(): ConfigurationLoader {
     if (!ConfigurationLoader.instance) {
@@ -23,18 +23,18 @@ export class ConfigurationLoader {
       configPath,
       join(process.cwd(), 'shango.yml'),
       join(process.cwd(), 'shango.yaml'),
-      join(process.cwd(), 'shango.tson')
+      join(process.cwd(), 'shango.json'),
     ].filter(Boolean) as string[];
 
     for (const path of paths) {
       if (existsSync(path)) {
         const content = readFileSync(path, 'utf8');
-        const parsedConfig = path.endsWith('.tson')
+        const parsedConfig = path.endsWith('.json')
           ? JSON.parse(content)
           : parseYAML(content);
 
         try {
-          this.config = validateConfig(parsedConfig);
+          this.config = ConfigSchema.parse(parsedConfig);
           return this.config;
         } catch (error) {
           throw new Error(`Invalid configuration in ${path}: ${error}`);
