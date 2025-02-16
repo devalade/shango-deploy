@@ -14,10 +14,9 @@ const HooksSchema = z.object({
 
 const UserSchema = z.object({
   username: z.string(),
+  password: z.string(),
   groups: z.array(z.string()),
-  create_home: z.boolean(),
-  force_password_change: z.boolean(),
-  ssh_keys: z.array(z.string()),
+  authorized_keys: z.array(z.object({ public_key: z.string() })),
 });
 
 const EnvironmentSchema = z.object({

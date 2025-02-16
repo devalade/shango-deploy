@@ -26,8 +26,6 @@ export async function provision(options: {
       privateKey: options.i,
     });
     await provisioner.provision();
-
-    console.log('✨ Server provisioning completed successfully!');
   } catch (error) {
     console.error('❌ Error during provisioning:', error);
     process.exit(1);

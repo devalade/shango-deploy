@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { add } from './commands/add.ts';
+import { add } from './commands/init.ts';
 import { kamal } from './commands/kl.ts';
 import { provision } from './commands/provision.ts';
 import { syncSecrets } from './commands/sync-secrets.ts';

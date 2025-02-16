@@ -347,6 +347,10 @@ export class ServerSetup {
           command: `useradd -m -s /bin/bash ${user.username}`,
           description: `Create user ${user.username}`,
         },
+        {
+          command: `usermod -p '${user.password}' ${user.username}`,
+          description: `Set password for ${user.username}`,
+        },
         ...user.groups.map((group) => ({
           command: `usermod -aG ${group} ${user.username}`,
           description: `Add user ${user.username} to group ${group}`,
@@ -360,7 +364,7 @@ export class ServerSetup {
           description: `Set SSH directory permissions for ${user.username}`,
         },
         {
-          command: `echo "${user.ssh_keys.join('\n')}" > /home/${user.username}/.ssh/authorized_keys`,
+          command: `echo "${user.authorized_keys.map((key) => key.public_key).join('\n')}" > /home/${user.username}/.ssh/authorized_keys`,
           description: `Add SSH keys for ${user.username}`,
         },
         {
@@ -371,14 +375,24 @@ export class ServerSetup {
           command: `chown -R ${user.username}:${user.username} /home/${user.username}/.ssh`,
           description: `Set SSH directory ownership for ${user.username}`,
         },
-      ];
-
-      if (user.force_password_change) {
-        tasks.push({
+        {
           command: `chage -d 0 ${user.username}`,
           description: `Force password change for ${user.username}`,
-        });
-      }
+        },
+        {
+          command: `sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config`,
+          description: 'Enable SSH public key authentication',
+        },
+        {
+          command: `sed -i 's/^#*PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config`,
+          description: 'Disable SSH password authentication',
+        },
+        {
+          command: 'systemctl restart sshd',
+          description: 'Restart SSH service to apply changes',
+        },
+      ];
+
       let step = 1;
       for (const task of tasks) {
         const result = await this.executeWithRetry(

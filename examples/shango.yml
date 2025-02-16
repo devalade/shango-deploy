@@ -16,9 +16,25 @@ users:
     groups:
       - docker
       - sudo
-    create_home: true
-    force_password_change: true
-    ssh_keys: []
+    password: "$6$vXRaYuC1wf3qhNkw$mJDbrjVcYb.v7XRTe45hu0y9YUW9jV9/.M5uipB14.64EnkVsL7KL3/LQ1ufSe/"
+    authorized_keys:
+      - public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINj0KKo4T vagrant_root_access_20250216_004906"
+
+  - username: obatala
+    groups:
+      - docker
+      - sudo
+    password: "$6$vXRaYuC1wf3qhNkw$mJDbrjVcYb.v7XRTe45hu0y9YUW9jV9/.M5uipB14.64EnkVsL7KL3/LQ1ufSe/"
+    authorized_keys:
+      - public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINj0KKo4Tr vagrant_root_access_20250216_004906"
+
+  - username: john
+    groups:
+      - docker
+      - sudo
+    password: "$6$DZMvXrUXN9QU.Ksd$T0JwYDf964ZBNITumRT2lhYx4EZ6pk1nYR/"
+    authorized_keys:
+      - public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINj0KKo4Tr vagrant_root_access_20250216_004906"
 
 hooks:
   pre_deploy:

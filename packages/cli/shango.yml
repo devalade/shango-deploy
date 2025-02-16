@@ -13,12 +13,12 @@ environment:
 
 users:
   - username: deploy
+    password: '$6$vXRaYuC1wf3qhNkw$mJDbrjVcYb.v7XRTe45hu0y9YUW9jV9/t1GRwe0OKRtmJ2z2C8lZ1j6.M5uipB14.64EnkVsL7KL3/LQ1ufSe/'
     groups:
       - docker
       - sudo
-    create_home: true
-    force_password_change: true
-    ssh_keys: []
+    authorized_keys:
+      - public_key: 'ssh-ed25519 AAAAC3NzaC1anotherfakekeyIMVIzwQXBzxxD9b8Erd1FKVvu deploy'
 
 hooks:
   pre_deploy:

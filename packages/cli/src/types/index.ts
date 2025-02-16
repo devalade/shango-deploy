@@ -75,9 +75,8 @@ export interface Hooks {
 export interface User {
   username: string;
   groups: string[];
-  create_home: boolean;
-  force_password_change: boolean;
-  ssh_keys: string[];
+  password: string;
+  authorized_keys: { public_key: string }[];
 }
 
 export interface ShangoConfig {
