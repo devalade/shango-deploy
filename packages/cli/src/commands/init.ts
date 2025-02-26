@@ -1,16 +1,12 @@
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { stringify } from 'yaml';
-import {
-  Framework,
-  DatabaseType,
-  CacheType,
-  type ShangoConfig,
-} from '../types/index.ts';
+import { Framework, DatabaseType, type ShangoConfig } from '../types/index.ts';
 import inquirer from 'inquirer';
 import { executeKamal } from '../util/execute-kamal.ts';
 import { TemplateManager } from '../lib/template/index.ts';
 import { KamalConfigurationManager } from '../lib/kamal-config/index.ts';
+import chalk from 'chalk';
 
 export async function init(): Promise<void> {
   try {
@@ -23,14 +19,15 @@ export async function init(): Promise<void> {
       },
       {
         type: 'list',
-        name: 'database',
+        name: 'db',
         message: 'Select your primary database:',
         choices: Object.values(DatabaseType),
       },
       {
         type: 'confirm',
-        name: 'inMemoryKVDatabase',
+        name: 'kv',
         message: 'Do you want to use redis ?',
+        default: true,
       },
       {
         type: 'input',
@@ -46,14 +43,8 @@ export async function init(): Promise<void> {
       },
       {
         type: 'input',
-        name: 'domain',
-        message: 'Enter your domain:',
-        validate: (input) =>
-          /^[a-zA-Z0-9][a-zA-Z0-9-_.]+\.[a-zA-Z]{2,}$/.test(input),
-      },
-      {
-        type: 'input',
         name: 'environment',
+        default: 'dev, staging, prod',
         message:
           'Enter the available deployment environment seperate by comma:',
         validate: (input) => !!input.trim(),
@@ -65,8 +56,9 @@ export async function init(): Promise<void> {
         name: answers.appName,
         github_username: answers.githubUsername,
         framework: answers.framework,
-        domain: answers.domain,
         port: 3000,
+        db: answers.db,
+        kv: answers.kv,
       },
       environment: await getEnvironment(answers.environment),
       users: [
@@ -97,13 +89,8 @@ export async function init(): Promise<void> {
 
     executeKamal('init');
 
-    const configManager = new KamalConfigurationManager(config, {
-      database: answers.database,
-      inMemoryKVDatabase: answers.inMemoryKVDatabase,
-    });
+    const configManager = new KamalConfigurationManager(config);
     await configManager.update();
-
-    process.exit(1);
 
     const templateManager = new TemplateManager({
       framework: answers.framework,
@@ -134,7 +121,7 @@ async function getEnvironment(
   const environments: ShangoConfig['environment'] = [];
 
   for (let index: number = 0; index < environment.split(',').length; index++) {
-    const name = environment.split(',')[index] as string;
+    const name = environment.split(',')[index].trim() as string;
     const environmentAnswers = await inquirer.prompt<{
       servers: string;
       hosts: string;
@@ -142,22 +129,23 @@ async function getEnvironment(
       {
         type: 'input',
         name: 'servers',
-        message: `Enter the available servers for the  ${name} seperate by comma:`,
+        message: `Enter the available ${chalk.bold.red('servers')} for the ${chalk.bold.blue(name)} seperate by comma:`,
         validate: (input) => !!input.trim(),
       },
       {
         type: 'input',
         name: 'hosts',
-        message: `Enter the available hosts for the ${name} seperate by comma:`,
+        message: `Enter the available ${chalk.bold.red('hosts')} for the ${chalk.bold.blue(name)} seperate by comma:`,
         validate: (input) => !!input.trim(),
       },
     ]);
     environments.push({
-      name: name,
+      name: environment,
       config: `./config/deploy.${environment}.yml`,
       hosts: environmentAnswers.hosts.split(',') as string[],
       servers: environmentAnswers.servers.split(',') as string[],
     });
   }
+
   return environments;
 }
