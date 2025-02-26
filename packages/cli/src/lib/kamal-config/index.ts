@@ -1,26 +1,18 @@
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { parse as parseYAML, stringify } from 'yaml';
 import { type ValidatedShangoConfig } from '../config/validator.ts';
 import { type KamalConfig, KamalConfigurationError } from './types.ts';
 import { mergeConfigurations } from './merger.ts';
-import { KamalConfigSchema } from './validator.ts';
 import { DatabaseType } from '../../types/index.ts';
-
-interface otherConfig {
-  database: DatabaseType;
-  inMemoryKVDatabase: boolean;
-}
 
 export class KamalConfigurationManager {
   private config: ValidatedShangoConfig;
   private kamalConfigPath: string;
   private envConfig: ValidatedShangoConfig['environment'][number];
-  private otherConfig: otherConfig;
 
-  constructor(config: ValidatedShangoConfig, otherConfig: otherConfig) {
+  constructor(config: ValidatedShangoConfig) {
     this.config = config;
-    this.otherConfig = otherConfig;
     this.kamalConfigPath = join(
       process.cwd(),
       this.config.environment[0].config,
@@ -35,16 +27,11 @@ export class KamalConfigurationManager {
           process.cwd(),
           this.config.environment[index].config,
         );
-        console.log({ envPath: this.kamalConfigPath });
-
-        this.prepareEnvironmentYamlFile(this.kamalConfigPath);
 
         this.envConfig = this.config.environment[0];
         await this.waitForKamalConfig();
 
-        const existingConfig = this.readKamalConfig();
-
-        const updatedConfig = this.generateUpdatedConfig(existingConfig);
+        const updatedConfig = this.generateConfigFromShango();
 
         this.writeKamalConfig(updatedConfig);
       }
@@ -57,7 +44,7 @@ export class KamalConfigurationManager {
 
   private async waitForKamalConfig(timeout: number = 5000): Promise<void> {
     const startTime = Date.now();
-    while (!existsSync(this.kamalConfigPath)) {
+    while (!this.createIfNotExit(this.kamalConfigPath)) {
       if (Date.now() - startTime > timeout) {
         throw new KamalConfigurationError(
           `Timeout waiting for ${this.kamalConfigPath} to be generated`,
@@ -67,24 +54,11 @@ export class KamalConfigurationManager {
     }
   }
 
-  private readKamalConfig(): KamalConfig {
-    try {
-      const content = readFileSync(this.kamalConfigPath, 'utf8');
-      const config = parseYAML(content);
-      return KamalConfigSchema.parse(config);
-    } catch (error) {
-      throw new KamalConfigurationError(`Failed to read kamal.yml: ${error}`);
-    }
-  }
-
-  private generateUpdatedConfig(existingConfig: KamalConfig): KamalConfig {
-    return mergeConfigurations(existingConfig, this.generateConfigFromShango());
-  }
-
-  private generateConfigFromShango(): Partial<KamalConfig> {
+  private generateConfigFromShango(): KamalConfig {
+    this.removeDefaultKamalConfig();
     return {
       service: this.config.app.name,
-      image: `ghcr.io/${this.config.app.github_username}/${this.config.app.name}`,
+      image: `ghcr.io/${this.config.app.github_username}/${this.config.app.name.toLowerCase()}`,
       registry: {
         server: 'ghcr.io',
         username: this.config.app.github_username,
@@ -135,11 +109,11 @@ export class KamalConfigurationManager {
   private generateAccessoriesConfig() {
     const accessories: Record<string, any> = {};
 
-    if (true) {
+    if (this.config.app.db && this.config.app.db.length > 0) {
       accessories.db = this.generateDatabaseConfig();
     }
 
-    if (true) {
+    if (this.config.app.kv) {
       accessories.cache = this.generateCacheConfig();
     }
 
@@ -147,9 +121,9 @@ export class KamalConfigurationManager {
   }
 
   private generateDatabaseConfig() {
-    if (this.otherConfig.database === DatabaseType.POSTGRESQL) {
+    if (this.config.app.db === DatabaseType.POSTGRESQL) {
       return this.getPostgreSQLConfig();
-    } else if (this.otherConfig.database === DatabaseType.MYSQL) {
+    } else if (this.config.app.db === DatabaseType.MYSQL) {
       return this.getMysqlConfig();
     }
     return {};
@@ -176,6 +150,7 @@ export class KamalConfigurationManager {
       directories: ['data:/var/lib/postgresql/data'],
     };
   }
+
   private getMysqlConfig() {
     return {
       image: 'mysql:8.0',
@@ -196,7 +171,7 @@ export class KamalConfigurationManager {
   }
 
   private generateCacheConfig() {
-    if (this.otherConfig.inMemoryKVDatabase) {
+    if (this.config.app.kv) {
       return {
         image: 'valkey/valkey:8',
         host: this.envConfig.servers[0],
@@ -208,7 +183,6 @@ export class KamalConfigurationManager {
   }
 
   private writeKamalConfig(config: KamalConfig): void {
-    console.log('writeKamalConfig', { path: this.kamalConfigPath });
     try {
       writeFileSync(this.kamalConfigPath, stringify(config));
     } catch (error) {
@@ -218,16 +192,31 @@ export class KamalConfigurationManager {
     }
   }
 
-  private prepareEnvironmentYamlFile(path: string) {
-    if (existsSync(path)) return;
-    const defaultConfig = 'config/deploy.yml';
-    if (!existsSync(path)) {
-      console.log('prepareEnvironmentYamlFile', { path: this.kamalConfigPath });
-      copyFileSync(defaultConfig, this.kamalConfigPath);
-    } else {
-      throw new KamalConfigurationError(
-        `Failed to generate ${this.kamalConfigPath}`,
-      );
+  private createIfNotExit(path: string) {
+    try {
+      if (existsSync(path)) {
+      } else {
+        writeFileSync(path, '');
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Error creating file:', err);
+      return false;
     }
+  }
+
+  private removeDefaultKamalConfig(): boolean {
+    const defaultConfigPath = './config/deploy.yml';
+    if (existsSync(defaultConfigPath)) {
+      try {
+        unlinkSync(defaultConfigPath);
+        return true;
+      } catch (err) {
+        console.error('Error deleting file:', err);
+        return false;
+      }
+    }
+    return true;
   }
 }

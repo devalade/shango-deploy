@@ -41,7 +41,7 @@ export interface KamalConfig {
     username: string;
     password: string | string[];
   };
-  builder: {
+  builder?: {
     ssh?: string;
     driver: string;
     arch: 'amd64' | 'arm64' | ('amd64' | 'arm64')[];

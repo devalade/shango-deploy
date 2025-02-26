@@ -26,14 +26,14 @@ export const AccessoryServiceSchema = z.object({
 });
 
 const RegistrySchema = z.object({
-  server: z.string(),
+  server: z.string().optional(),
   username: z.string(),
   password: z.union([z.string(), z.array(z.string())]),
 });
 
 export const BuilderSchema = z.object({
   ssh: z.string().optional(),
-  driver: z.string(),
+  driver: z.string().optional(),
   arch: z.union([
     z.literal('amd64'),
     z.literal('arm64'),
@@ -45,7 +45,7 @@ export const BuilderSchema = z.object({
   dockerfile: z.string().optional(),
   target: z.string().optional(),
   provenance: z.string().optional(),
-  sbom: z.boolean(),
+  sbom: z.boolean().optional(),
   cache: z
     .object({
       type: z.union([z.literal('gha'), z.literal('registry')]),
