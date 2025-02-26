@@ -6,15 +6,19 @@ import { TemplateError } from './error.ts';
 export class GithubActionsTemplate extends BaseTemplate {
   private getWorkflowTemplate(): string {
     const templatePath = join(
+      process.env.HOME!,
       this.options.templateDir,
+      this.options.framework,
       'github-actions',
-      'deploy.yml'
+      'deploy.yml',
     );
 
     try {
       return readFileSync(templatePath, 'utf8');
     } catch (error) {
-      throw new TemplateError(`Failed to read GitHub Actions template: ${error}`);
+      throw new TemplateError(
+        `Failed to read GitHub Actions template: ${error}`,
+      );
     }
   }
 
@@ -37,14 +41,14 @@ export class GithubActionsTemplate extends BaseTemplate {
 
   validate(): boolean {
     if (!this.options.githubUsername || !this.options.appName) {
-      throw new TemplateError('GitHub username and app name are required for GitHub Actions template');
+      throw new TemplateError(
+        'GitHub username and app name are required for GitHub Actions template',
+      );
     }
     return true;
   }
 
   async generate(): Promise<void> {
-    this.validate();
-
     const template = this.getWorkflowTemplate();
     const processedTemplate = this.processTemplate(template);
 
@@ -53,7 +57,9 @@ export class GithubActionsTemplate extends BaseTemplate {
       mkdirSync(workflowDir, { recursive: true });
       writeFileSync(join(workflowDir, 'deploy.yml'), processedTemplate);
     } catch (error) {
-      throw new TemplateError(`Failed to write GitHub Actions workflow: ${error}`);
+      throw new TemplateError(
+        `Failed to write GitHub Actions workflow: ${error}`,
+      );
     }
   }
 }

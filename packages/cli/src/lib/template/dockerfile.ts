@@ -7,9 +7,10 @@ import { Framework } from '../../types/index.ts';
 export class DockerfileTemplate extends BaseTemplate {
   private getDockerfileTemplate(): string {
     const templatePath = join(
+      process.env.HOME!,
       this.options.templateDir,
-      'dockerfiles',
-      `${this.options.framework}.dockerfile`
+      this.options.framework,
+      'Dockerfile',
     );
 
     try {
