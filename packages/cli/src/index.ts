@@ -5,6 +5,7 @@ import { init } from './commands/init.ts';
 import { kamal } from './commands/kl.ts';
 import { provision } from './commands/provision.ts';
 import { syncSecrets } from './commands/sync-secrets.ts';
+import { update } from './commands/update.ts';
 
 const program = new Command();
 
@@ -37,9 +38,16 @@ program
   .action(init);
 
 program
+  .command('update')
+  .description('Update your kamal config base on the shango config')
+  .action(update);
+
+program
   .command('kl')
   .argument('[cmd...]')
   .description('This is an alias to the kamal deploy')
+  .enablePositionalOptions()
+  .allowUnknownOption()
   .action(kamal);
 
 program
