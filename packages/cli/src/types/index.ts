@@ -84,8 +84,9 @@ export interface ShangoConfig {
     name: string;
     github_username: string;
     framework: Framework;
-    domain: string;
     port: number;
+    db: string;
+    kv: boolean;
   };
   environment: {
     name: string;
